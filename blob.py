@@ -1,10 +1,5 @@
-#from picamera import PiCamera
-import time
-import numpy as np
-from PIL import Image
-
-
 class Blob():
+
 	"""Blob detection. Returns coordinates of all blobs
 
 	This class takes a camera image and returns the pixel coordinates of all blobs.
@@ -13,7 +8,7 @@ class Blob():
 	belong to single blobs, and calculate the center of each blob.
 	"""
 
-	def __init__(self, img_raw, thresh=80, x_res=128, y_res=96):
+	def __init__(self, img_raw, thresh=80, x_res=192, y_res=144):
 		"""Load a new image
 		
 		Arguments:
