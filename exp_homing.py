@@ -4,31 +4,37 @@ import time
 import numpy as np
 from picamera import PiCamera
 
-import img
-import blob
+from camera import Camera
+from blob import Blob
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
-Camera.camera_settings()
+# create camera and choose settings
+camera = Camera()
+camera.settings()
 
 
+# analyze right side
+img = camera.capture(right)
+blobs_right = Blob(img)
+blobs_right.blob_detect()
+print('blobs_right.blobs')
 
-img = Camera.img_capture(right)
-blobs_right = Blob.blob_detect(img)
+# analyze left side
+img = camera.capture(left)
+blobs_left = Blob(img)
+blobs_left.blob_detect()
+print('blobs_left.blobs')
 
 
-img = Camera.img_capture(left)
-blobs_left = Blob.blob_detect(img)
+#if blobs_right && blobs_left:
+#	fwd
 
+#else if blobs_right:
+#	left
 
-if blobs_right && blobs_left:
-	fwd
-
-else if blobs_right:
-	left
-
-else right
+#else right
 
 
 

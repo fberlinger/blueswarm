@@ -13,7 +13,7 @@ class Camera():
         self.x_res = x_res
 		self.y_res = y_res
 
-	def camera_settings():
+	def settings():
 	    """Sets settings for both cameras
 	    """
 	    CAMLED = 40
@@ -29,7 +29,7 @@ class Camera():
 		camera.brightness = 25
 		camera.contrast = 100
 
-	def img_capture(camera):
+	def capture(camera):
 	    """Captures an image with one camera
 	    
 	    Args:
@@ -47,6 +47,6 @@ class Camera():
 			print('camera error: select btw right and left camera')
 
 		camera.capture(img, 'rgb', use_video_port=True)
-		#camera.capture('right.jpg', use_video_port=True)
+		camera.capture('right.jpg', use_video_port=True)
 
 		return img
