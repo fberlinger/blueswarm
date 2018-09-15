@@ -1,52 +1,44 @@
+import RPi.GPIO as GPIO
+
+import time
+import numpy as np
+from picamera import PiCamera
+
+
 class Camera():
 
-    """Summary
-    """
-
-    def __init__(self, x_res=192, y_res=144):
-        """Summary
-        
-        Args:
-            x_res (int, optional): Description
-            y_res (int, optional): Description
-        """
-        self.x_res = x_res
+	def __init__(self, x_res=192, y_res=144):
+		self.x_res = x_res
 		self.y_res = y_res
 
-	def settings():
-	    """Sets settings for both cameras
-	    """
-	    CAMLED = 40
-		GPIO.setup(CAMLED, GPIO.OUT)
+	def settings(self):
+		self.CAMLED = 40
+		GPIO.setup(self.CAMLED, GPIO.OUT)
 
-		camera = PiCamera()
-		camera.resolution = (self.x_res, self.y_res)
-		camera.framerate = 60
-		camera.color_effects = (128, 128) # black and white
-		camera.awb_mode = 'off'
-		camera.awb_gains = (1, 1)
-		camera.iso = 100
-		camera.brightness = 25
-		camera.contrast = 100
+		self.picam = PiCamera()
+		self.picam.resolution = (self.x_res, self.y_res)
+		self.picam.framerate = 60
+		self.picam.color_effects = (128, 128) # black and white
+		self.picam.awb_mode = 'off'
+		self.picam.awb_gains = (1, 1)
+		self.picam.iso = 100
+		self.picam.brightness = 25
+		self.picam.contrast = 100
 
-	def capture(camera):
-	    """Captures an image with one camera
-	    
-	    Args:
-	        camera (string): left or right camera
-	    """
-	    img = np.empty((self.y_res, self.x_res, 3), dtype=np.uint8)
+	def capture(self, side):
+		img = np.empty((self.y_res, self.x_res, 3), dtype=np.uint8)
 
-	    if camera == 'right':
-		    GPIO.output(CAMLED, False) # Set to right cam
+		if side == 'right':
+			GPIO.output(self.CAMLED, False) # Set to right cam
+			self.picam.capture('right.jpg', use_video_port=True)
 
-		else if camera == 'left':	
-			GPIO.output(CAMLED, True) # Set to left cam
+		elif side == 'left':	
+			GPIO.output(self.CAMLED, True) # Set to left cam
+			self.picam.capture('left.jpg', use_video_port=True)
 
 		else:
 			print('camera error: select btw right and left camera')
 
-		camera.capture(img, 'rgb', use_video_port=True)
-		camera.capture('right.jpg', use_video_port=True)
+		self.picam.capture(img, 'rgb', use_video_port=True)
 
 		return img

@@ -1,3 +1,10 @@
+import RPi.GPIO as GPIO
+
+import time
+import numpy as np
+from picamera import PiCamera
+
+
 class Blob():
 
 	"""Blob detection. Returns coordinates of all blobs
@@ -66,6 +73,10 @@ class Blob():
 		Arguments:
 			blob_pixels {} -- array of pixels that belong to blobs
 		"""
+
+		if not blob_pixels.size:
+			self.blobs = np.zeros(0)
+			return
 
 		# Find pixels that are continuous in x-direction
 		x = blob_pixels[0, :]
