@@ -1,13 +1,14 @@
 import RPi.GPIO as GPIO
 
 import time
+import utils
 import numpy as np
 from picamera import PiCamera
 
 
 class Camera():
 
-    def __init__(self, x_res=192, y_res=144):
+    def __init__(self, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
         self.x_res = x_res
         self.y_res = y_res
 

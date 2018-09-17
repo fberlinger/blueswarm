@@ -1,0 +1,2 @@
+U_CAM_XRES = 192
+U_CAM_YRES = 144

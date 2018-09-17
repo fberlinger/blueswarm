@@ -2,14 +2,14 @@ import RPi.GPIO as GPIO
 
 import time
 import datetime
+import math
 import numpy as np
 from picamera import PiCamera
 
-#import utils
+import utils
 import move
 from camera import Camera
 from blob import Blob
-
 
 
 
@@ -23,6 +23,7 @@ class Homing():
         self.t_blob_l = 0
         self.t_blob_r = 0
         self.t_loop = 0
+        self.thresh_orbiting = 0.4
 
         # logger instance
         self.exp_name = exp_name
@@ -40,8 +41,14 @@ class Homing():
                 )
 
     def run(self):
+        self.homing()
+        #self.orbiting()
+
+    def homing(self):
         time_start = time.time()
         t_loop = 0
+
+        total_no_pixels = (U_CAM_YRES / 2)** * math.pi
 
         while time.time() - time_start < self.run_time:
             # analyze right side
@@ -53,17 +60,28 @@ class Homing():
             blobs_right.blob_detect()
             self.t_blob_l = time.time() - t_blob_l
             print(blobs_right.blobs)
+            print(blobs_right.blob_size)
+            print(blobs_right.no_blobs)
 
             # analyze left side
             img = camera.capture('left')
             blobs_left = Blob(img)
             blobs_left.blob_detect()
             print(blobs_left.blobs)
+            print(blobs_left.blob_size)
+            print(blobs_left.no_blobs)
 
 
-            if blobs_right.blobs.size and blobs_left.blobs.size:
+            if blobs_right.blob_size and blobs_left.blob_size:
                 print('fwd')
                 #move.forward()
+                
+                # initialize orbiting
+                total_blob_pixels = blobs_left.blob_size + blobs_right.blob_size
+                blob_ratio =  total_blob_pixels / (2 * total_no_pixels)
+                
+                #if blob_ratio > self.thresh_orbiting:
+                #    return
 
             elif blobs_right.blobs.size:
                 print('left_fin')
@@ -80,6 +98,21 @@ class Homing():
         move.stop()
         move.terminate()
 
+    def orbiting(self):
+        while blobs_left.blobs[0, 0] > 0:
+            move.cw()
+
+        time_start = time.time()
+        while time.time() - time_start < self.run_time:
+            move.forward()
+            if blobs_left.blobs[0, 0] < U_CAM_YRES / 5:
+                move.ccw()
+
+    def depth_ctrl_from_cam(self):
+        if blobs_left.blobs[0, 1] > 0:
+                move.down()
+
+
 if __name__ == "__main__":
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
@@ -95,6 +128,3 @@ if __name__ == "__main__":
 =======
 move.stop()
 move.terminate()
-
-# This is a useless comment
->>>>>>> f497b462ad193b924c3ee6a7523534bd4843b6e8

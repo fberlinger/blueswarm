@@ -1,6 +1,7 @@
 import RPi.GPIO as GPIO
 
 import time
+import utils
 import numpy as np
 from picamera import PiCamera
 
@@ -15,7 +16,7 @@ class Blob():
     belong to single blobs, and calculate the center of each blob.
     """
 
-    def __init__(self, img_raw, thresh=80, x_res=192, y_res=144):
+    def __init__(self, img_raw, thresh=80, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
         """Load a new image
         
         Arguments:
@@ -34,7 +35,9 @@ class Blob():
         self.y_res = y_res
 
         # Initializations
+        self.blob_size = 0
         self.blobs = np.zeros((1, 2))
+        self.no_blobs = 0
 
     def blob_detect(self):
         """Runs all subfunctions for blob detection"""
@@ -74,7 +77,9 @@ class Blob():
             blob_pixels {} -- array of pixels that belong to blobs
         """
 
-        if not blob_pixels.size:
+        # Total amount of blob pixels. If none, return.
+        self.blob_size = blob_pixels.size
+        if not self.blob_size:
             self.blobs = np.zeros(0)
             return
 
@@ -90,8 +95,6 @@ class Blob():
         blob_x[:, -1] += 1
 
         # For each continous set in x-direction, find pixels that are also continuous in y-direction
-        no_blobs = 0
-
         for i in range(0, blob_x.shape[1]-1):
             x = blob_pixels[0, blob_x[0, i]:blob_x[0, i+1]]
             y = blob_pixels[1, blob_x[0, i]:blob_x[0, i+1]]
@@ -113,9 +116,10 @@ class Blob():
                 x_center = round(sum(x[blob_indices])/blob_indices.shape[0])
                 y_center = round(sum(y[blob_indices])/blob_indices.shape[0])
 
-                if no_blobs == 0:
-                    self.blobs[0, 0] = x_center
-                    self.blobs[0, 1] = y_center
-                else:
-                    self.blobs = np.append(self.blobs, [[x_center, y_center]], axis=0)
-                no_blobs += 1
+                # center and rotate image 180 degrees
+                x_center = (self.x_res / 2) - x_center
+                y_center = (self.y_res / 2) - y_center
+
+                self.blobs = np.append(self.blobs, [[x_center, y_center]], axis=0)
+        
+        self.no_blobs = self.blobs.shape[1]
