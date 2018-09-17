@@ -32,6 +32,7 @@ class Homing():
 
 
 
+<<<<<<< HEAD
 
 
 
@@ -96,3 +97,9 @@ if __name__ == "__main__":
 	
 	homing = Homing(10, 'exp_1')
 	homing.run()
+=======
+move.stop()
+move.terminate()
+
+# This is a useless comment
+>>>>>>> f497b462ad193b924c3ee6a7523534bd4843b6e8
