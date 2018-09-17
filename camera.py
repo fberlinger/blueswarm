@@ -11,10 +11,9 @@ class Camera():
 		self.x_res = x_res
 		self.y_res = y_res
 
-	def settings(self):
+		# camera settings
 		self.CAMLED = 40
 		GPIO.setup(self.CAMLED, GPIO.OUT)
-
 		self.picam = PiCamera()
 		self.picam.resolution = (self.x_res, self.y_res)
 		self.picam.framerate = 60
@@ -30,11 +29,11 @@ class Camera():
 
 		if side == 'right':
 			GPIO.output(self.CAMLED, False) # Set to right cam
-			self.picam.capture('right.jpg', use_video_port=True)
+			#self.picam.capture('right.jpg', use_video_port=True)
 
 		elif side == 'left':	
 			GPIO.output(self.CAMLED, True) # Set to left cam
-			self.picam.capture('left.jpg', use_video_port=True)
+			#self.picam.capture('left.jpg', use_video_port=True)
 
 		else:
 			print('camera error: select btw right and left camera')
