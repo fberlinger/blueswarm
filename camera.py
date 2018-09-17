@@ -1,44 +1,59 @@
 import RPi.GPIO as GPIO
 
 import time
+import utils
 import numpy as np
 from picamera import PiCamera
 
 
 class Camera():
 
-	def __init__(self, x_res=192, y_res=144):
-		self.x_res = x_res
-		self.y_res = y_res
+    def __init__(self, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
+        self.x_res = x_res
+        self.y_res = y_res
 
-	def settings(self):
-		self.CAMLED = 40
-		GPIO.setup(self.CAMLED, GPIO.OUT)
 
-		self.picam = PiCamera()
-		self.picam.resolution = (self.x_res, self.y_res)
-		self.picam.framerate = 60
-		self.picam.color_effects = (128, 128) # black and white
-		self.picam.awb_mode = 'off'
-		self.picam.awb_gains = (1, 1)
-		self.picam.iso = 100
-		self.picam.brightness = 25
-		self.picam.contrast = 100
+        # camera settings
+        self.CAMLED = 40
+        GPIO.setup(self.CAMLED, GPIO.OUT)
 
-	def capture(self, side):
-		img = np.empty((self.y_res, self.x_res, 3), dtype=np.uint8)
+    def settings(self):
+        self.CAMLED = 40
+        GPIO.setup(self.CAMLED, GPIO.OUT)
 
-		if side == 'right':
-			GPIO.output(self.CAMLED, False) # Set to right cam
-			self.picam.capture('right.jpg', use_video_port=True)
+        self.picam = PiCamera()
+        self.picam.resolution = (self.x_res, self.y_res)
+        self.picam.framerate = 60
+        self.picam.color_effects = (128, 128) # black and white
+        self.picam.awb_mode = 'off'
+        self.picam.awb_gains = (1, 1)
+        self.picam.iso = 100
+        self.picam.brightness = 25
+        self.picam.contrast = 100
 
-		elif side == 'left':	
-			GPIO.output(self.CAMLED, True) # Set to left cam
-			self.picam.capture('left.jpg', use_video_port=True)
+    def capture(self, side):
 
-		else:
-			print('camera error: select btw right and left camera')
+        img = np.empty((self.y_res, self.x_res, 3), dtype=np.uint8)
 
-		self.picam.capture(img, 'rgb', use_video_port=True)
+        if side == 'right':
+            GPIO.output(self.CAMLED, False) # Set to right cam
 
-		return img
+            #self.picam.capture('right.jpg', use_video_port=True)
+
+        elif side == 'left':    
+            GPIO.output(self.CAMLED, True) # Set to left cam
+            #self.picam.capture('left.jpg', use_video_port=True)
+
+            self.picam.capture('right.jpg', use_video_port=True)
+
+        elif side == 'left':    
+            GPIO.output(self.CAMLED, True) # Set to left cam
+            self.picam.capture('left.jpg', use_video_port=True)
+
+        else:
+            print('camera error: select btw right and left camera')
+
+        self.picam.capture(img, 'rgb', use_video_port=True)
+
+        return img
+
