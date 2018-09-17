@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
 
+import csv
 import time
 import datetime
 import math
@@ -30,15 +31,28 @@ class Homing():
         with open('{}.log'.format(self.exp_name), 'w') as f:
             f.truncate()
             f.write('t_loop    :: t_capture_l :: t_capture_r :: t_blob_l :: t_blob_r ::(ABSOLUTE TIME)\n')
+        
+        with open('{}.csv'.format('blobs'), 'w') as f:
+            f.truncate()
 
 
-    def log(self):
-        with open('{}.log'.format(self.exp_name), 'a+') as f:
+
+    def log_status(self):
+        with open('{}.log'.format(self.exp_name), 'a') as f:
             f.write(
                 '{:05} :: {:05} :: {:05} :: {:05} :: {:05} :: ({})\n'.format(
                     self.t_loop, self.t_capture_l, self.t_capture_r, self.t_blob_l, self.t_blob_r, datetime.datetime.now()
                     )
                 )
+
+    def log_blobs(self):
+        with open('{}.csv'.format('blobs'), 'a') as f:
+            writer = csv.writer(f, delimiter=',')
+            row = []
+            for i in range(self.blob_list.size):
+                row.append(self.blob_list[0, i])
+            writer.writerow(row)
+
 
     def run(self):
         self.homing()
@@ -62,6 +76,12 @@ class Homing():
             print(blobs_right.blobs)
             print(blobs_right.blob_size)
             print(blobs_right.no_blobs)
+
+            self.blob_list = 255 * np.ones((3, 2))
+            self.blob_list[:blobs_right.blobs.shape[0], :blobs_right.blobs.shape[1]] = blobs_right.blobs
+            self.blob_list = self.blob_list.reshape((1,6))
+
+            self.log_blobs()
 
             # analyze left side
             img = camera.capture('left')
@@ -92,7 +112,7 @@ class Homing():
                 #move.ccw()
 
             self.t_loop = time.time() - t_loop
-            self.log()
+            self.log_status()
             t_loop = time.time()
 
         move.stop()
@@ -125,6 +145,6 @@ if __name__ == "__main__":
     
     homing = Homing(10, 'exp_1')
     homing.run()
-=======
+
 move.stop()
 move.terminate()
