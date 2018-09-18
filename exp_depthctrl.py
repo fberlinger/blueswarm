@@ -15,12 +15,7 @@ from camera import Camera
 from blob import Blob
 
 
-status = ['home', 'orbit', 'terminate']
-
 def initialize(exp_name='unnamed'):
-    # initial status
-    status = 'home'
-
     # arm motors
     move.initialize()
 
@@ -40,7 +35,7 @@ def terminate():
     move.stop()
     move.terminate()
 
-def log_status():
+def log_status(t_now, t_loop, t_observe_r, status):
     with open('{}.log'.format(self.exp_name), 'a') as f:
         f.write(
             '{:05} :: {:05} :: {:05} :: ({})\n'.format(
@@ -59,46 +54,6 @@ def log_blobs(blobs_right):
         for i in range(blob_list.size):
             row.append(blob_list[0, i])
         writer.writerow(row)
-
-def home(blobs_right, blobs_left, total_blob_pixels):
-    # control
-    thresh_orbit = 0.4 # [%], blob_pixels / total_no_pixels
-    total_no_pixels = (U_CAM_YRES / 2)**2 * math.pi # pixels in spherical FOV
-
-    # blob in front
-    if blobs_right.size and blobs_left.size:
-        print('move fwd')
-        #move.forward()
-        
-        # initialize orbiting?
-        if orbit:
-            blob_ratio =  total_blob_pixels / (2 * total_no_pixels)
-            if blob_ratio > thresh_orbit:
-                status = 'orbit'
-
-    # blob to the right
-    elif blobs_right.size:
-        print('turn cw')
-        #move.cw()
-
-    # blob to the left or behind
-    else:
-        print('turn ccw')
-        #move.ccw()
-
-def orbit(blobs_right):
-    thresh_heading = 0.2
-    horizontal_offset = blobs_right[0, 0] / (U_CAM_YRES / 2)
-
-    if horizontal_offset > thresh_heading:
-        print('turn ccw')
-        #move.ccw()
-    elif horizontal_offset < thresh_heading:
-        print('turn cw')
-        #move.cw()
-    else:
-        print('move fwd')    
-        #move.forward()
 
 def depth_ctrl_from_cam(blobs_right, blobs_left):
     if (blobs_right[0, 1] + blobs_left[0, 1]) > 0:
@@ -126,30 +81,19 @@ def main(run_time=60):
         blobs_left.blob_detect()
 
         total_blob_pixels = blobs_left.blob_size + blobs_right.blob_size
-       
-        # act based on status
-        if status == 'home':
-            home(blobs_right.blobs, blobs_left.blobs, total_blob_pixels)
-        elif status == 'orbit':
-            orbit(blobs_right.blobs)
-        elif status == 'terminate':
-            terminate()
 
         # ctrl depth
-        if depth_ctrl:
-            depth_ctrl_from_cam(blobs_right.blobs, blobs_left.blobs)
+        depth_ctrl_from_cam(blobs_right.blobs, blobs_left.blobs)
 
         # log status
-        t_now = time.time()
-        t_loop = t_now - t_loop
-        log_status(t_now, t_loop, t_observe_r, status)
+        time_now = time.time()
+        t_loop = time_now - t_loop
+        log_status(time_now, t_loop, t_observe_r, status)
         t_loop = time.time()
 
     terminate()
 
 
-# homing plus orbiting, 2D or 3D
-orbit = False
-depth_ctrl = False
+# homing plus orbiting
 initialize('exp_1')
 main(20)

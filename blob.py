@@ -1,9 +1,7 @@
 import RPi.GPIO as GPIO
 
-import time
 import utils
 import numpy as np
-from picamera import PiCamera
 
 
 class Blob():
