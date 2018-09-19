@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO
 
-import utils
+from utils import *
 import numpy as np
 
 
@@ -14,7 +14,7 @@ class Blob():
     belong to single blobs, and calculate the center of each blob.
     """
 
-    def __init__(self, img_raw, thresh=80, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
+    def __init__(self, img_raw, thresh=120, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
         """Load a new image
         
         Arguments:
@@ -111,13 +111,28 @@ class Blob():
             # For pixels continuous in x- and y-direction, find centroids
             for j in range(0, blob_y.shape[1]-1):
                 blob_indices = arg_y[np.asscalar(blob_y[:, j]):np.asscalar(blob_y[:, j+1])]
-                x_center = round(sum(x[blob_indices])/blob_indices.shape[0])
-                y_center = round(sum(y[blob_indices])/blob_indices.shape[0])
+                x_center_temp = round(sum(x[blob_indices])/blob_indices.shape[0])
+                y_center_temp = round(sum(y[blob_indices])/blob_indices.shape[0])
 
-                # center and rotate image 180 degrees
-                x_center = (self.x_res / 2) - x_center
-                y_center = (self.y_res / 2) - y_center
+                # coordinate system with origin at image center, x-axis looking forward, y-axis looking upward
+                # x-horizontal, y-vertical
+                x_center = y_center_temp
+                y_center = x_center_temp
+                # x-forward, y-upward
+                x_center = self.x_res - x_center
+                y_center = self.y_res - y_center
+                # x-y-centered
+                x_center = x_center - (self.x_res / 2)
+                y_center = y_center - (self.y_res / 2)
+                # flip image 180 degrees bcs camera mounted upside down
+                x_center = -x_center
+                y_center = -y_center
 
-                self.blobs = np.append(self.blobs, [[x_center, y_center]], axis=0)
+                if self.no_blobs == 0:
+                    self.blobs[0, 0] = x_center
+                    self.blobs[0, 1] = y_center
+
+                else:
+                    self.blobs = np.append(self.blobs, [[x_center, y_center]], axis=0)
         
-        self.no_blobs = self.blobs.shape[1]
+                self.no_blobs += 1
