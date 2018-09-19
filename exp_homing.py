@@ -17,7 +17,7 @@ from blob import Blob
 
 status = ['home', 'orbit', 'terminate']
 
-def initialize(exp_name='unnamed'):
+def initialize():
     # initial status
     status = 'home'
 
@@ -41,7 +41,7 @@ def terminate():
     move.terminate()
 
 def log_status():
-    with open('{}.log'.format(self.exp_name), 'a') as f:
+    with open('{}.log'.format(exp_name), 'a') as f:
         f.write(
             '{:05} :: {:05} :: {:05} :: ({})\n'.format(
                 t_now, t_loop, t_observe_r, status
@@ -149,7 +149,8 @@ def main(run_time=60):
 
 
 # homing plus orbiting, 2D or 3D
+exp_name='unnamed'
 orbit = False
 depth_ctrl = False
-initialize('exp_1')
+initialize()
 main(20)
