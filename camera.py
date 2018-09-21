@@ -36,13 +36,17 @@ class Camera():
         if side == 'right':
             GPIO.output(self.CAMLED, False) # Set to right cam
             if self.store_img:
+                self.picam.rotation = 180
                 self.picam.capture('{}_r{}.jpg'.format(U_FILENAME, self.no_r), use_video_port=True)
+                self.picam.rotation = 0
                 self.no_r += 1
 
         elif side == 'left':    
             GPIO.output(self.CAMLED, True) # Set to left camv
             if self.store_img:
+                self.picam.rotation = 180
                 self.picam.capture('{}_l{}.jpg'.format(U_FILENAME, self.no_l), use_video_port=True)
+                self.picam.rotation = 0
                 self.no_l += 1
 
         else:
