@@ -14,7 +14,7 @@ class Blob():
     belong to single blobs, and calculate the center of each blob.
     """
 
-    def __init__(self, img_raw, thresh=120, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
+    def __init__(self, img_raw, side, thresh=80, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
         """Load a new image
         
         Arguments:
@@ -28,6 +28,7 @@ class Blob():
 
         # Parameters
         self.img_raw = img_raw
+        self.side = side
         self.thresh = thresh
         self.x_res = x_res
         self.y_res = y_res
@@ -111,8 +112,8 @@ class Blob():
             # For pixels continuous in x- and y-direction, find centroids
             for j in range(0, blob_y.shape[1]-1):
                 blob_indices = arg_y[np.asscalar(blob_y[:, j]):np.asscalar(blob_y[:, j+1])]
-                x_center_temp = round(sum(x[blob_indices])/blob_indices.shape[0])
-                y_center_temp = round(sum(y[blob_indices])/blob_indices.shape[0])
+                x_center_temp = round(sum(x[blob_indices])/blob_indices.shape[0], 3)
+                y_center_temp = round(sum(y[blob_indices])/blob_indices.shape[0], 3)
 
                 # coordinate system with origin at image center, x-axis looking forward, y-axis looking upward
                 # x-horizontal, y-vertical
@@ -125,7 +126,8 @@ class Blob():
                 x_center = x_center - (self.x_res / 2)
                 y_center = y_center - (self.y_res / 2)
                 # flip image 180 degrees bcs camera mounted upside down
-                x_center = -x_center
+                if self.side == 'right':
+                    x_center = -x_center
                 y_center = -y_center
 
                 if self.no_blobs == 0:

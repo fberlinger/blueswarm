@@ -14,18 +14,18 @@ from camera import Camera
 from blob import Blob
 
 
-def initialize(exp_name='unnamed'):
+def initialize():
     # logger instance for overall status
-    with open('{}.log'.format(exp_name), 'w') as f:
+    with open('{}.log'.format(U_FILENAME), 'w') as f:
         f.truncate()
         f.write('t_passed    :: t_loop      :: t_observe_r :: status\n')
 
     # logger for blob centroids    
-    with open('{}.csv'.format('blobs'), 'w') as f:
+    with open('{}.csv'.format(U_FILENAME), 'w') as f:
         f.truncate()
 
 def log_status(t_passed, t_loop, t_observe_r, blob_size):
-    with open('{}.log'.format(exp_name), 'a') as f:
+    with open('{}.log'.format(U_FILENAME), 'a') as f:
         f.write(
             '{:.3f} :: {:.3f} :: {:.3f} :: {}\n'.format(
                 t_passed, t_loop, t_observe_r, blob_size
@@ -35,11 +35,12 @@ def log_status(t_passed, t_loop, t_observe_r, blob_size):
 def log_blobs(t_passed, blobs_right):
     print(blobs_right)
     print(blobs_right.shape)
-    blob_list = 255 * np.ones((5, 2)) # max 5 blobs, remaining values are 255
-    blob_list[:blobs_right.shape[0], :blobs_right.shape[1]] = blobs_right
+    blob_list = U_CAM_YRES * np.ones((5, 2)) # max 5 blobs, remaining values are 127
+    if blobs_right.size:
+        blob_list[:blobs_right.shape[0], :blobs_right.shape[1]] = blobs_right
     blob_list = blob_list.reshape((1, blob_list.size))
 
-    with open('{}.csv'.format('blobs'), 'a') as f:
+    with open('{}.csv'.format(U_FILENAME), 'a') as f:
         writer = csv.writer(f, delimiter=',')
         row = []
         row.append(t_passed)
@@ -49,13 +50,13 @@ def log_blobs(t_passed, blobs_right):
 
 def main(run_time=60):
     # loop
-    time_start = time.time()
+    t_start = time.time()
     t_loop_prev = time.time()
-    while time.time() - time_start < run_time:
+    while time.time() - t_start < run_time:
         # observe right side of environment and measure time for logging
         t_observe_r = time.time()
         img = camera.capture('right')
-        blobs_right = Blob(img)
+        blobs_right = Blob(img, 'right')
         blobs_right.blob_detect()
         t_observe_r = time.time() - t_observe_r
 
@@ -65,11 +66,10 @@ def main(run_time=60):
         t_loop = t_now - t_loop_prev
         t_loop_prev = time.time()
         log_status(t_passed, t_loop, t_observe_r, blobs_right.blob_size)
-        log_blobs(t_passed, blobs_right.blobs)
+        log_blobs(round(t_passed, 3), blobs_right.blobs)
 
 # homing plus orbiting
 # create camera and choose settings
-camera = Camera()
-exp_name='unnamed'
+camera = Camera(True)
 initialize()
-main(40)
+main(20)
