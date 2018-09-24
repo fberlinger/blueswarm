@@ -26,7 +26,7 @@ class Camera():
         self.picam.color_effects = (128, 128) # black and white
         self.picam.awb_mode = 'off'
         self.picam.awb_gains = (1, 1)
-        self.picam.iso = 100
+        self.picam.iso = 120
         self.picam.brightness = 30
         self.picam.contrast = 100
 

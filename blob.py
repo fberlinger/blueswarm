@@ -78,7 +78,7 @@ class Blob():
 
         # Total amount of blob pixels. If none, return.
         self.blob_size = blob_pixels.size
-        if not self.blob_size:
+        if self.blob_size < 4:
             self.blobs = np.zeros(0)
             return
 

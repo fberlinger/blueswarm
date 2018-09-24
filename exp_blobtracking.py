@@ -4,7 +4,6 @@ GPIO.setmode(GPIO.BCM)
 
 import csv
 import time
-import datetime
 import math
 import numpy as np
 from picamera import PiCamera
@@ -18,29 +17,29 @@ def initialize():
     # logger instance for overall status
     with open('{}.log'.format(U_FILENAME), 'w') as f:
         f.truncate()
-        f.write('t_passed    :: t_loop      :: t_observe_r :: status\n')
+        f.write('t_passed :: t_loop :: t_observe_r :: #blob_r_pix :: #blob_l_pix\n')
 
     # logger for blob centroids    
-    with open('{}.csv'.format(U_FILENAME), 'w') as f:
-        f.truncate()
+    #with open('{}.csv'.format(U_FILENAME), 'w') as f:
+    #    f.truncate()
 
-def log_status(t_passed, t_loop, t_observe_r, blob_size):
+def log_status(t_passed, t_loop, t_observe_r, blob_r_size, blob_l_size):
     with open('{}.log'.format(U_FILENAME), 'a') as f:
         f.write(
-            '{:.3f} :: {:.3f} :: {:.3f} :: {}\n'.format(
-                t_passed, t_loop, t_observe_r, blob_size
+            '  {:6.3f} :: {:6.3f} ::      {:6.3f} ::      {:6} ::      {:6}\n'.format(
+                t_passed, t_loop, t_observe_r, blob_r_size, blob_l_size
                 )
             )
 
-def log_blobs(t_passed, blobs_right):
-    print(blobs_right)
-    print(blobs_right.shape)
-    blob_list = U_CAM_YRES * np.ones((5, 2)) # max 5 blobs, remaining values are 127
-    if blobs_right.size:
-        blob_list[:blobs_right.shape[0], :blobs_right.shape[1]] = blobs_right
+def log_blobs(t_passed, blobs, side):
+    print(blobs)
+    print(blobs.shape)
+    blob_list = U_CAM_YRES * np.ones((5, 2)) # max 5 blobs, remaining values U_CAM_YRES
+    if blobs.size:
+        blob_list[:blobs.shape[0], :blobs.shape[1]] = blobs
     blob_list = blob_list.reshape((1, blob_list.size))
 
-    with open('{}.csv'.format(U_FILENAME), 'a') as f:
+    with open('{}_{}.csv'.format(U_FILENAME, side), 'a') as f:
         writer = csv.writer(f, delimiter=',')
         row = []
         row.append(t_passed)
@@ -60,16 +59,21 @@ def main(run_time=60):
         blobs_right.blob_detect()
         t_observe_r = time.time() - t_observe_r
 
+        # observe left side of environment
+        img = camera.capture('left')
+        blobs_left = Blob(img, 'left')
+        blobs_left.blob_detect()
+
         # log status and blobs
         t_now = time.time()
         t_passed = t_now - t_start
         t_loop = t_now - t_loop_prev
         t_loop_prev = time.time()
-        log_status(t_passed, t_loop, t_observe_r, blobs_right.blob_size)
-        log_blobs(round(t_passed, 3), blobs_right.blobs)
+        log_status(t_passed, t_loop, t_observe_r, blobs_right.blob_size, blobs_left.blob_size)
+        log_blobs(round(t_passed, 3), blobs_right.blobs, 'right')
+        log_blobs(round(t_passed, 3), blobs_left.blobs, 'left')
 
-# homing plus orbiting
-# create camera and choose settings
+
 camera = Camera(True)
 initialize()
-main(20)
+main(40)
