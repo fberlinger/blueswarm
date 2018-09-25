@@ -37,7 +37,7 @@ def log_status(t_passed, t_loop, t_observe_r, blob_r_size, blob_l_size):
 def log_blobs(t_passed, blobs, side):
     #print(blobs)
     #print(blobs.shape)
-    blob_list = U_CAM_YRES * np.ones((5, 2)) # max 5 blobs, remaining values U_CAM_YRES
+    blob_list = U_CAM_YRES * np.ones((10, 2)) # max 10 blobs, remaining values U_CAM_YRES
     if blobs.size:
         blob_list[:blobs.shape[0], :blobs.shape[1]] = blobs
     blob_list = blob_list.reshape((1, blob_list.size))
@@ -46,7 +46,8 @@ def log_blobs(t_passed, blobs, side):
         writer = csv.writer(f, delimiter=',')
         row = []
         row.append(t_passed)
-        for i in range(blob_list.size):
+        #for i in range(blob_list.size):
+        for i in range(10):
             row.append(blob_list[0, i])
         writer.writerow(row)
 
@@ -58,6 +59,14 @@ def depth_ctrl_from_cam(blobs_right, blobs_left):
         blobs_right = blobs_left
     elif not blobs_left.size:
         blobs_left = blobs_right
+
+    # discard blobs that are reflected on the surface
+    blobs_r_ind = np.where(blobs_right == min(blobs_right[:, 1]))
+    blobs_l_ind = np.where(blobs_left == min(blobs_left[:, 1]))
+    blobs_r = blobs_right[blobs_r_ind[0], :]
+    blobs_l = blobs_left[blobs_l_ind[0], :]
+
+    #print(blobs_l)
 
     if ((blobs_right[0, 1] + blobs_left[0, 1]) / 2) < 0:
         #print('move down')
@@ -100,6 +109,6 @@ def main(run_time=60):
 
 
 # homing plus orbiting
-camera = Camera(True)
+camera = Camera()
 initialize()
-main(120)
+main(180)
