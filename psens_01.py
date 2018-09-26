@@ -11,7 +11,14 @@ class DepthSensor():
 	def __init__(self):
 		self.pressure_mbar = 0
 		self.temperature_celsius = 0
-		self.depth_mm = 0;
+		self.depth_mm = 0
+
+		try:
+			f = open("surface_pressure.txt", 'r')
+			s = f.readline()
+			self._surface_pressure = float(s)
+		except:
+			self._surface_pressure = 0
 
 		# Get I2C bus
 		bus = smbus.SMBus(1)
@@ -53,7 +60,6 @@ class DepthSensor():
 
 		time.sleep(0.5)
 
-
 		self.update()
 
 	def update(self):
@@ -88,7 +94,7 @@ class DepthSensor():
 		# Read digital temperature value
 		# Read data back from 0x00(0), 3 bytes
 		# D2 MSB2, D2 MSB1, D2 LSB
-		value = bus.read_i2c_block_data(0x76, 0x00, 3)
+		value = bus.read_i2c_block_data(0x77, 0x00, 3)
 		D2 = value[0] * 65536 + value[1] * 256 + value[2]
 
 		dT = D2 - C5 * 256
@@ -117,13 +123,8 @@ class DepthSensor():
 		SENS = SENS - SENS2
 		pressure = ((((D1 * SENS) / 2097152) - OFF) / 32768.0) / 100.0
 		cTemp = TEMP / 100.0
-		fTemp = cTemp * 1.8 + 32
+		# fTemp = cTemp * 1.8 + 32
 
 		self.pressure_mbar = pressure
 		self.temperature_celsius = cTemp
-		self.depth_mm = max(0, (pressure - 1013.25) * 10.197162129779) # TODO
-
-		# # Output data to screen
-		# print "Pressure : %.2f mbar" %pressure
-		# print "Temperature in Celsius : %.2f C" %cTemp
-		# print "Temperature in Fahrenheit : %.2f F" %fTemp
+		self.depth_mm = max(0, (pressure - self._surface_pressure) * 10.197162129779) # TODO
