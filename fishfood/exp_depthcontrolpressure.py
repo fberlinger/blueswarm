@@ -1,5 +1,6 @@
-from depth_sensor import DepthSensor
-from fin import Fin
+from lib_depthsensor import DepthSensor
+from lib_fin import Fin
+from lib_leds import LEDS
 
 import RPi.GPIO as GPIO
 import threading
@@ -15,29 +16,30 @@ threading.Thread(target=dorsal.run).start()
 threading.Thread(target=pectol.run).start()
 threading.Thread(target=pector.run).start()
 
-target_depth = 200
-thresh_lo = 198
-thresh_hi = 202
-
 depth_sensor = DepthSensor()
+leds = LEDS()
+
+run_time = 120
+thresh_lo = 150
+thresh_hi = 400
 
 start_time = time.time()
 
 state = 0
 
-while time.time() - start_time < 60:
+while time.time() - start_time < run_time:
     depth_sensor.update()
     depth_mm = depth_sensor.depth_mm
 
     if state == 1 and depth_mm > thresh_hi:
-        dorsal.stop()
+        dorsal.off()
         state = 0
 
     if state == 0 and depth_mm < thresh_lo:
-        dorsal.start()
+        dorsal.on()
         state = 1
 
-dorsal.stop()
+dorsal.off()
 
 caudal.terminate()
 dorsal.terminate()

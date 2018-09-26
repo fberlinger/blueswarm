@@ -2,7 +2,7 @@ import threading
 from time import sleep
 import RPi.GPIO as GPIO
 
-from fin import Fin
+from lib_fin import Fin
 
 caudal = Fin(20, 21, 4)
 dorsal = Fin(19, 26, 4)

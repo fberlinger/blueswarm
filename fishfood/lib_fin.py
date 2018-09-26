@@ -15,10 +15,10 @@ class Fin():
         GPIO.setup(pin_1, GPIO.OUT)
         GPIO.setup(pin_2, GPIO.OUT)
 
-    def start(self):
+    def on(self):
         self._is_started = True
 
-    def stop(self):
+    def off(self):
         GPIO.output(self._pin_1, GPIO.LOW)
         GPIO.output(self._pin_2, GPIO.LOW)
         self._is_started = False
