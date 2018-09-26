@@ -1,22 +1,18 @@
+from utils import *
+
 import RPi.GPIO as GPIO
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
+CAMLED = 40
+GPIO.setup(CAMLED, GPIO.OUT)
 
-from PIL import Image
+from picamera import PiCamera
+picam = PiCamera()
+picam.resolution = (640, 480)
+picam.rotation = 180
 
-from utils import *
-import numpy as np
-from camera import Camera
+GPIO.output(CAMLED, False)
+picam.capture('{}_sr.jpg'.format(U_FILENAME), use_video_port=True)
 
-camera = Camera(True)
-img_right = camera.capture('right')
-img_r = np.zeros((U_CAM_YRES, U_CAM_XRES, 3), dtype=np.uint8)
-img_r = np.array(img_right)
-im = Image.fromarray(img_right)
-im.save("img_right_from_array.jpeg")
-
-img_left = camera.capture('left')
-img_l = np.zeros((U_CAM_YRES, U_CAM_XRES, 3), dtype=np.uint8)
-img_l = np.array(img_left)
-im = Image.fromarray(img_left)
-im.save("img_left_from_array.jpeg")
+GPIO.output(CAMLED, True)
+picam.capture('{}_sl.jpg'.format(U_FILENAME), use_video_port=True)
