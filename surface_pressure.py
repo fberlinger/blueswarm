@@ -1,4 +1,4 @@
-from psens_01 import DepthSensor
+from depth_sensor import DepthSensor
 
 d = DepthSensor()
 
