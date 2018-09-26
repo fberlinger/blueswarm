@@ -1,4 +1,4 @@
-from depth_sensor import DepthSensor
+from lib_depthsensor import DepthSensor
 
 d = DepthSensor()
 

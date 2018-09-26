@@ -19,13 +19,15 @@ threading.Thread(target=pector.run).start()
 depth_sensor = DepthSensor()
 leds = LEDS()
 
-run_time = 120
+run_time = 30
 thresh_lo = 150
 thresh_hi = 400
 
 start_time = time.time()
 
 state = 0
+
+leds.on()
 
 while time.time() - start_time < run_time:
     depth_sensor.update()
@@ -40,6 +42,7 @@ while time.time() - start_time < run_time:
         state = 1
 
 dorsal.off()
+leds.off()
 
 caudal.terminate()
 dorsal.terminate()
