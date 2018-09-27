@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO
 
-from utils import *
+from lib_utils import *
 import numpy as np
 from picamera import PiCamera
 

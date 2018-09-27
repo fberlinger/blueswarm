@@ -5,26 +5,43 @@ GPIO.setmode(GPIO.BCM)
 import csv
 import time
 import math
+import threading
 import numpy as np
 from picamera import PiCamera
 
-from utils import *
-from camera import Camera
-from blob import Blob
-import move
+from lib_utils import *
+from lib_camera import Camera
+from lib_blob import Blob
+from lib_fin import Fin
+from lib_leds import LEDS
 
 
 def initialize():
+    threading.Thread(target=caudal.run).start()
+    threading.Thread(target=dorsal.run).start()
+    threading.Thread(target=pectol.run).start()
+    threading.Thread(target=pector.run).start()
+
     # logger instance for overall status
     with open('{}.log'.format(U_FILENAME), 'w') as f:
         f.truncate()
         f.write('t_passed :: t_loop :: t_observe_r :: #blob_r_pix :: #blob_l_pix\n')
 
-    move.initialize()
+    leds.on()
+    time.sleep(1)
+    leds.off()
 
 def terminate():
-    move.stop()
-    move.terminate()
+    caudal.terminate()
+    dorsal.terminate()
+    pectol.terminate()
+    pector.terminate()
+
+    leds.on()
+    time.sleep(1)
+    leds.off()
+
+    GPIO.cleanup()
 
 def log_status(t_passed, t_loop, t_observe_r, blob_r_size, blob_l_size):
     with open('{}.log'.format(U_FILENAME), 'a') as f:
@@ -70,9 +87,9 @@ def depth_ctrl_from_cam(blobs_right, blobs_left):
 
     if ((blobs_right[0, 1] + blobs_left[0, 1]) / 2) < 0:
         #print('move down')
-        move.down()
+        dorsal.on()
     else:
-        move.stop()
+        dorsal.off()
 
 def main(run_time=60):
     # loop
@@ -108,7 +125,13 @@ def main(run_time=60):
     terminate()
 
 
-# homing plus orbiting
+# depth ctrl from cams
+caudal = Fin(20, 21, 1)
+dorsal = Fin(19, 26, 6)
+pectol = Fin(18, 23, 1)
+pector = Fin(4, 22, 1)
 camera = Camera()
+leds = LEDS()
+
 initialize()
-main(180)
+main(60)
