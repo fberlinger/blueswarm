@@ -4,59 +4,70 @@ GPIO.setmode(GPIO.BCM)
 
 import csv
 import time
-import datetime
 import math
+import threading
 import numpy as np
 from picamera import PiCamera
 
-form utils import *
-import move
-from camera import Camera
-from blob import Blob
+from lib_utils import *
+from lib_camera import Camera
+from lib_blob import Blob
+from lib_fin import Fin
+from lib_leds import LEDS
+
 
 
 status = ['home', 'orbit', 'terminate']
 
 def initialize():
-    # initial status
-    status = 'home'
-
-    # arm motors
-    move.initialize()
-
-    # create camera and choose settings
-    camera = Camera()
+    threading.Thread(target=caudal.run).start()
+    threading.Thread(target=dorsal.run).start()
+    threading.Thread(target=pectol.run).start()
+    threading.Thread(target=pector.run).start()
 
     # logger instance for overall status
-    with open('{}.log'.format(exp_name), 'w') as f:
+    with open('{}.log'.format(U_FILENAME), 'w') as f:
         f.truncate()
-        f.write('t_now :: t_loop :: t_observe_r :: status')
+        f.write('t_passed :: t_loop :: t_observe_r :: #blob_r_pix :: #blob_l_pix\n')
 
-    # logger for blob centroids    
-    with open('{}.csv'.format('blobs'), 'w') as f:
-        f.truncate()
+    leds.on()
+    time.sleep(1)
+    leds.off()
 
 def terminate():
-    move.stop()
-    move.terminate()
+    caudal.terminate()
+    dorsal.terminate()
+    pectol.terminate()
+    pector.terminate()
 
-def log_status():
-    with open('{}.log'.format(exp_name), 'a') as f:
+    leds.on()
+    time.sleep(1)
+    leds.off()
+
+    GPIO.cleanup()
+
+def log_status(t_passed, t_loop, t_observe_r, blob_r_size, blob_l_size):
+    with open('{}.log'.format(U_FILENAME), 'a') as f:
         f.write(
-            '{:05} :: {:05} :: {:05} :: ({})\n'.format(
-                t_now, t_loop, t_observe_r, status
+            '  {:6.3f} :: {:6.3f} ::      {:6.3f} ::      {:6} ::      {:6} ::      {:6}\n'.format(
+                t_passed, t_loop, t_observe_r, blob_r_size, blob_l_size, status
                 )
             )
 
-def log_blobs(blobs_right):
-    blob_list = 255 * np.ones((3, 2)) # max 3 blobs, remaining values are 255
-    blob_list[:blobs_right.shape[0], :blobs_right.shape[1]] = blobs_right
+def log_blobs(t_passed, blobs, side):
+    #print(blobs)
+    #print(blobs.shape)
+    blob_list = U_CAM_YRES * np.ones((10, 2)) # max 10 blobs, remaining values U_CAM_YRES
+    if blobs.size:
+        blob_list[:blobs.shape[0], :blobs.shape[1]] = blobs
     blob_list = blob_list.reshape((1, blob_list.size))
 
-    with open('{}.csv'.format('blobs'), 'a') as f:
+    with open('{}_{}.csv'.format(U_FILENAME, side), 'a') as f:
         writer = csv.writer(f, delimiter=',')
         row = []
-        for i in range(blob_list.size):
+        row.append(t_passed)
+        #for i in range(blob_list.size):
+        for i in range(10):
             row.append(blob_list[0, i])
         writer.writerow(row)
 
@@ -68,8 +79,10 @@ def home(blobs_right, blobs_left, total_blob_pixels):
     # blob in front
     if blobs_right.size and blobs_left.size:
         print('move fwd')
-        #move.forward()
-        
+        #caudal.on()
+        #pector.off()
+        #pectol.off()
+
         # initialize orbiting?
         if orbit:
             blob_ratio =  total_blob_pixels / (2 * total_no_pixels)
@@ -79,12 +92,16 @@ def home(blobs_right, blobs_left, total_blob_pixels):
     # blob to the right
     elif blobs_right.size:
         print('turn cw')
-        #move.cw()
+        #pectol.on()
+        #pector.off()
+        #caudal.off()
 
     # blob to the left or behind
     else:
         print('turn ccw')
-        #move.ccw()
+        #pector.on()
+        #pectol.off()
+        #caudal.off()
 
 def orbit(blobs_right):
     thresh_heading = 0.2
@@ -92,41 +109,63 @@ def orbit(blobs_right):
 
     if horizontal_offset > thresh_heading:
         print('turn ccw')
-        #move.ccw()
+        #pector.on()
+        #pectol.off()
+        #caudal.off()
     elif horizontal_offset < thresh_heading:
         print('turn cw')
-        #move.cw()
+        #pectol.on()
+        #pector.off()
+        #caudal.off()
     else:
-        print('move fwd')    
-        #move.forward()
+        print('move fwd')
+        #caudal.on()
+        #pector.off()
+        #pectol.off()
 
 def depth_ctrl_from_cam(blobs_right, blobs_left):
-    if (blobs_right[0, 1] + blobs_left[0, 1]) > 0:
-        print('move down')
-        #move.down()
+    if not blobs_right.size and not blobs_left.size:
+        return
+
+    if not blobs_right.size:
+        blobs_right = blobs_left
+    elif not blobs_left.size:
+        blobs_left = blobs_right
+
+    # discard blobs that are reflected on the surface
+    blobs_r_ind = np.where(blobs_right == min(blobs_right[:, 1]))
+    blobs_l_ind = np.where(blobs_left == min(blobs_left[:, 1]))
+    blobs_r = blobs_right[blobs_r_ind[0], :]
+    blobs_l = blobs_left[blobs_l_ind[0], :]
+
+    #print(blobs_l)
+
+    if ((blobs_right[0, 1] + blobs_left[0, 1]) / 2) < 0:
+        #print('move down')
+        dorsal.on()
+    else:
+        dorsal.off()
 
 def main(run_time=60):
     # loop
-    time_start = time.time()
-    t_loop = time.time()
-    while time.time() - time_start < run_time:
+    t_start = time.time()
+    t_loop_prev = time.time()
+    while time.time() - t_start < run_time:
         # observe right side of environment and measure time for logging
         t_observe_r = time.time()
         img = camera.capture('right')
-        blobs_right = Blob(img)
+        blobs_right = Blob(img, 'right')
         blobs_right.blob_detect()
         t_observe_r = time.time() - t_observe_r
 
-        # log blobs on right side of environment
-        log_blobs(blobs_right.blobs)
-
         # observe left side of environment
         img = camera.capture('left')
-        blobs_left = Blob(img)
+        blobs_left = Blob(img, 'left')
         blobs_left.blob_detect()
 
         total_blob_pixels = blobs_left.blob_size + blobs_right.blob_size
-       
+
+
         # act based on status
         if status == 'home':
             home(blobs_right.blobs, blobs_left.blobs, total_blob_pixels)
@@ -139,18 +178,28 @@ def main(run_time=60):
         if depth_ctrl:
             depth_ctrl_from_cam(blobs_right.blobs, blobs_left.blobs)
 
-        # log status
+        # log status and blobs
         t_now = time.time()
-        t_loop = t_now - t_loop
-        log_status(t_now, t_loop, t_observe_r, status)
-        t_loop = time.time()
+        t_passed = t_now - t_start
+        t_loop = t_now - t_loop_prev
+        t_loop_prev = time.time()
+        log_status(t_passed, t_loop, t_observe_r, blobs_right.blob_size, blobs_left.blob_size, status)
+        log_blobs(round(t_passed, 3), blobs_right.blobs, 'right')
+        log_blobs(round(t_passed, 3), blobs_left.blobs, 'left')
 
     terminate()
 
 
 # homing plus orbiting, 2D or 3D
-exp_name='unnamed'
 orbit = False
 depth_ctrl = False
+
+caudal = Fin(20, 21, 1)
+dorsal = Fin(19, 26, 6)
+pectol = Fin(18, 23, 1)
+pector = Fin(4, 22, 1)
+camera = Camera()
+leds = LEDS()
+
 initialize()
-main(20)
+main(10)
