@@ -46,10 +46,10 @@ def terminate():
 
     GPIO.cleanup()
 
-def log_status(t_passed, t_loop, t_observe_r, blob_r_size, blob_l_size):
+def log_status(t_passed, t_loop, t_observe_r, blob_r_size, blob_l_size, status):
     with open('{}.log'.format(U_FILENAME), 'a') as f:
         f.write(
-            '  {:6.3f} :: {:6.3f} ::      {:6.3f} ::      {:6} ::      {:6} ::      {:6}\n'.format(
+            '  {:6.3f} :: {:6.3f} ::      {:6.3f} ::      {:6} ::      {:6} ::      {}\n'.format(
                 t_passed, t_loop, t_observe_r, blob_r_size, blob_l_size, status
                 )
             )
@@ -81,7 +81,7 @@ def home(blobs_right, blobs_left, total_blob_pixels):
         print('move fwd')
         #caudal.on()
         #pector.off()
-        #pectol.off()
+        pectol.off()
 
         # initialize orbiting?
         if orbit:
@@ -92,15 +92,22 @@ def home(blobs_right, blobs_left, total_blob_pixels):
     # blob to the right
     elif blobs_right.size:
         print('turn cw')
-        #pectol.on()
+        pectol.on()
         #pector.off()
         #caudal.off()
 
-    # blob to the left or behind
-    else:
+    # blob to the left
+    elif blobs_left.size:
         print('turn ccw')
         #pector.on()
-        #pectol.off()
+        pectol.off()
+        #caudal.off()
+
+    # blob behind or lost
+    else:
+        print('lost blob, turn ccw')
+        #pector.on()
+        pectol.off()
         #caudal.off()
 
 def orbit(blobs_right):
@@ -141,10 +148,11 @@ def depth_ctrl_from_cam(blobs_right, blobs_left):
     #print(blobs_l)
 
     if ((blobs_right[0, 1] + blobs_left[0, 1]) / 2) < 0:
-        #print('move down')
-        dorsal.on()
+        print('move down')
+        #dorsal.on()
     else:
-        dorsal.off()
+        print('move up')
+        #dorsal.off()
 
 def main(run_time=60):
     # loop
@@ -191,8 +199,9 @@ def main(run_time=60):
 
 
 # homing plus orbiting, 2D or 3D
+status = 'home'
 orbit = False
-depth_ctrl = False
+depth_ctrl = True
 
 caudal = Fin(20, 21, 1)
 dorsal = Fin(19, 26, 6)
@@ -202,4 +211,4 @@ camera = Camera()
 leds = LEDS()
 
 initialize()
-main(10)
+main(30)
