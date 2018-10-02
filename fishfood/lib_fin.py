@@ -12,8 +12,8 @@ class Fin():
         self._state = 0
 
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(pin_1, GPIO.OUT)
-        GPIO.setup(pin_2, GPIO.OUT)
+        GPIO.setup(self._pin_1, GPIO.OUT)
+        GPIO.setup(self._pin_2, GPIO.OUT)
 
     def on(self):
         self._is_started = True
@@ -45,7 +45,7 @@ class Fin():
             GPIO.output(self._pin_1, GPIO.LOW)
             GPIO.output(self._pin_2, GPIO.HIGH)
         else:
-            GPIO.output(self._pin_1, GPIO.HIGH)
             GPIO.output(self._pin_2, GPIO.LOW)
+            GPIO.output(self._pin_1, GPIO.HIGH)
 
         self._state = 1 - self._state

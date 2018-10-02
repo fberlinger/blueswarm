@@ -79,8 +79,8 @@ def home(blobs_right, blobs_left, total_blob_pixels):
     # blob in front
     if blobs_right.size and blobs_left.size:
         print('move fwd')
-        #caudal.on()
-        #pector.off()
+        caudal.on()
+        pector.off()
         pectol.off()
 
         # initialize orbiting?
@@ -93,22 +93,22 @@ def home(blobs_right, blobs_left, total_blob_pixels):
     elif blobs_right.size:
         print('turn cw')
         pectol.on()
-        #pector.off()
-        #caudal.off()
+        pector.off()
+        caudal.off()
 
     # blob to the left
     elif blobs_left.size:
         print('turn ccw')
-        #pector.on()
+        pector.on()
         pectol.off()
-        #caudal.off()
+        caudal.off()
 
     # blob behind or lost
     else:
-        print('lost blob, turn ccw')
-        #pector.on()
+        print('lost blob, wait')
+        pector.off()
         pectol.off()
-        #caudal.off()
+        caudal.off()
 
 def orbit(blobs_right):
     thresh_heading = 0.2
@@ -149,10 +149,10 @@ def depth_ctrl_from_cam(blobs_right, blobs_left):
 
     if ((blobs_right[0, 1] + blobs_left[0, 1]) / 2) < 0:
         print('move down')
-        #dorsal.on()
+        dorsal.on()
     else:
         print('move up')
-        #dorsal.off()
+        dorsal.off()
 
 def main(run_time=60):
     # loop
@@ -203,12 +203,14 @@ status = 'home'
 orbit = False
 depth_ctrl = True
 
-caudal = Fin(20, 21, 1)
-dorsal = Fin(19, 26, 6)
-pectol = Fin(18, 23, 1)
-pector = Fin(4, 22, 1)
+caudal = Fin(20, 21, 5)
+dorsal = Fin(19, 26, 5)
+pectol = Fin(18, 23, 6)
+pector = Fin(4, 17, 6)
 camera = Camera()
 leds = LEDS()
 
+
+time.sleep(10)
 initialize()
-main(30)
+main(70)

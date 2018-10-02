@@ -14,7 +14,7 @@ class Blob():
     belong to single blobs, and calculate the center of each blob.
     """
 
-    def __init__(self, img_raw, side, thresh=80, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
+    def __init__(self, img_raw, side, thresh=60, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
         """Load a new image
         
         Arguments:
