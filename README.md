@@ -73,3 +73,14 @@ Pectoral right fin: 4, 22
 LED: 13
 
 Photodiode: 27
+
+# TODO for next version
+
+- Remove or cover red camera LEDs
+- Test LEDs
+- Smaller resistors for LEDs, use PWM to control brightness
+- Change charging pin
+- Change PCB (op-amp fix, ADC fix, new voltage reading cct)
+
+# TODO other
+Tracking (run test to see if color is trackable)
