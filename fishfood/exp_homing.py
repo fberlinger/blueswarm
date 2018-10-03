@@ -211,6 +211,6 @@ camera = Camera()
 leds = LEDS()
 
 
-time.sleep(10)
+time.sleep(5)
 initialize()
 main(70)
