@@ -67,10 +67,7 @@ class Blob():
     def _continuity(self, blob_pixels):
         """Clusters blob pixels and returns lists of single blob centroids
 
-        This method checks all blob pixels for continuity in x-direction. It then
-        checks the subsets which are continous in x-direction for continuity in
-        y-direction. It finally returns an array that contains the centroids of
-        individual blobs.
+        This method checks all blob pixels for continuity in x-direction. It then checks the subsets which are continous in x-direction for continuity in y-direction. It finally returns an array that contains the centroids of individual blobs.
         
         Arguments:
             blob_pixels {} -- array of pixels that belong to blobs
@@ -134,7 +131,14 @@ class Blob():
                     self.blobs[0, 0] = x_center
                     self.blobs[0, 1] = y_center
 
+                    # only for calib:
+                    #self.blobs[0, 0] = self.y_res - x_center_temp
+                    #self.blobs[0, 1] = self.x_res - y_center_temp
+
                 else:
                     self.blobs = np.append(self.blobs, [[x_center, y_center]], axis=0)
+
+                    # only for calib:
+                    #self.blobs = np.append(self.blobs, [[self.y_res - x_center_temp, self.x_res - y_center_temp]], axis=0)
         
                 self.no_blobs += 1
