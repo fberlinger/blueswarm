@@ -8,9 +8,9 @@ import math
 import numpy as np
 from picamera import PiCamera
 
-from utils import *
-from camera import Camera
-from blob import Blob
+from lib_utils import *
+from lib_camera import Camera
+from lib_blob import Blob
 
 
 def initialize():
