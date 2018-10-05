@@ -106,24 +106,32 @@ def home(blobs_right, blobs_left, total_blob_pixels):
     # blob to the right
     elif blobs_right.size:
         freq_l = 2 + 6 * (U_CAM_YRES/2 - blobs_right[0, 0]) / U_CAM_YRES
-        pectol.set_frequency(freq_l)
+        pectol.set_frequency(abs(freq_l))
         #print('freq_l is {}'.format(freq_l))
 
         print('turn cw')
         pectol.on()
         pector.off()
-        caudal.off()
+
+        if (blobs_right[0, 0] > 50):
+            caudal.on()
+        else:
+            caudal.off()
 
     # blob to the left
     elif blobs_left.size:
         freq_r = 2 + 6 * (U_CAM_YRES/2 - blobs_left[0, 0]) / U_CAM_YRES
-        pector.set_frequency(freq_r)
+        pector.set_frequency(abs(freq_r))
         #print('freq_r is {}'.format(freq_r))
 
         print('turn ccw')
         pector.on()
         pectol.off()
-        caudal.off()
+
+        if (blobs_left[0, 0] > 50):
+            caudal.on()
+        else:
+            caudal.off()
 
     # blob behind or lost
     else:
@@ -178,14 +186,14 @@ def main(run_time=60):
         # observe right side of environment and measure time for logging
         t_observe_r = time.time()
         img = camera.capture('right')
-        blobs_right = Blob(img, 'right')
+        blobs_right = Blob(img, 'right', 40)
         blobs_right.blob_detect()
         blobs_r = blobs_right.blobs
         t_observe_r = time.time() - t_observe_r
 
         # observe left side of environment
         img = camera.capture('left')
-        blobs_left = Blob(img, 'left')
+        blobs_left = Blob(img, 'left', 40)
         blobs_left.blob_detect()
         blobs_l = blobs_left.blobs
 
@@ -238,4 +246,4 @@ leds = LEDS()
 
 time.sleep(5)
 initialize()
-main(70)
+main(50)
