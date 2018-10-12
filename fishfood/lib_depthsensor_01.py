@@ -99,8 +99,8 @@ class DepthSensor():
 
 		dT = D2 - C5 * 256
 		TEMP = 2000 + dT * C6 / 8388608
-		OFF = C2 * 131072 + (C4 * dT) / 64
-		SENS = C1 * 65536 + (C3 * dT ) / 128
+		OFF = C2 * 65536 + (C4 * dT) / 128
+		SENS = C1 * 32768 + (C3 * dT ) / 256
 		T2 = 0
 		OFF2 = 0
 		SENS2 = 0
@@ -109,14 +109,14 @@ class DepthSensor():
 			T2 = 0
 			OFF2 = 0
 			SENS2 = 0
+			if TEMP > 4500 :
+				SENS2 = SENS2 - ((TEMP - 4500) * (TEMP - 4500)) / 8
 		elif TEMP < 2000 :
 			T2 = (dT * dT) / 2147483648
-			OFF2= 61 * ((TEMP - 2000) * (TEMP - 2000)) / 16
-			SENS2= 2 * ((TEMP - 2000) * (TEMP - 2000))
+			OFF2 = 3 * ((TEMP - 2000) * (TEMP - 2000))
+			SENS2 = 7 * ((TEMP - 2000) * (TEMP - 2000)) / 8
 			if TEMP < -1500 :
-				OFF2 = OFF2 + 20 * ((TEMP + 1500) * (TEMP + 1500))
-				SENS2 = SENS2 + 12 * ((TEMP + 1500) * (TEMP +1500))
-
+				SENS2 = SENS2 + 2 * ((TEMP + 1500) * (TEMP + 1500))
 
 		TEMP = TEMP - T2
 		OFF = OFF - OFF2

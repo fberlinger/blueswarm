@@ -19,9 +19,9 @@ threading.Thread(target=pector.run).start()
 depth_sensor = DepthSensor()
 leds = LEDS()
 
-run_time = 30
+run_time = 120
 thresh_lo = 150
-thresh_hi = 400
+thresh_hi = 350
 
 start_time = time.time()
 

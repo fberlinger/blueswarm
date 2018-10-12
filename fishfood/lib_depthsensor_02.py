@@ -1,7 +1,7 @@
 # Distributed with a free-will license.
 # Use it any way you want, profit or free, provided it fits in the licenses of its associated works.
 # MS5803_02BA
-# This code is designed to work with the MS5803_02BA_I2CS I2C Mini Module available from ControlEverything.com.
+# This code is designed to work with the MS5803_01BA_I2CS I2C Mini Module available from ControlEverything.com.
 # https://www.controleverything.com/content/Analog-Digital-Converters?sku=MS5803-02BA_I2CS#tabs-0-product_tabset-2
 
 import smbus
@@ -11,7 +11,14 @@ class DepthSensor():
 	def __init__(self):
 		self.pressure_mbar = 0
 		self.temperature_celsius = 0
-		self.depth_mm = 0;
+		self.depth_mm = 0
+
+		try:
+			f = open("surface_pressure.txt", 'r')
+			s = f.readline()
+			self._surface_pressure = float(s)
+		except:
+			self._surface_pressure = 0
 
 		# Get I2C bus
 		bus = smbus.SMBus(1)
@@ -52,7 +59,6 @@ class DepthSensor():
 		bus.write_byte(0x77, 0x1E)
 
 		time.sleep(0.5)
-
 
 		self.update()
 
@@ -111,18 +117,14 @@ class DepthSensor():
 				OFF2 = OFF2 + 20 * ((TEMP + 1500) * (TEMP + 1500))
 				SENS2 = SENS2 + 12 * ((TEMP + 1500) * (TEMP +1500))
 
+
 		TEMP = TEMP - T2
 		OFF = OFF - OFF2
 		SENS = SENS - SENS2
 		pressure = ((((D1 * SENS) / 2097152) - OFF) / 32768.0) / 100.0
 		cTemp = TEMP / 100.0
-		fTemp = cTemp * 1.8 + 32
+		# fTemp = cTemp * 1.8 + 32
 
 		self.pressure_mbar = pressure
 		self.temperature_celsius = cTemp
-		self.depth_mm = max(0, (pressure - 1013.25) * 10.197162129779) # TODO
-
-		# # Output data to screen
-		# print "Pressure : %.2f mbar" %pressure
-		# print "Temperature in Celsius : %.2f C" %cTemp
-		# print "Temperature in Fahrenheit : %.2f F" %fTemp
+		self.depth_mm = max(0, (pressure - self._surface_pressure) * 10.197162129779) # TODO
