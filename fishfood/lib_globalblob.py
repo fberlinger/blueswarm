@@ -4,7 +4,7 @@ from lib_utils import *
 import numpy as np
 
 
-class Blob():
+class GBlob():
 
     """Blob detection. Returns coordinates of all blobs
 
@@ -14,7 +14,7 @@ class Blob():
     belong to single blobs, and calculate the center of each blob.
     """
 
-    def __init__(self, img_raw, side, thresh=60, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
+    def __init__(self, side, thresh=60, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
         """Load a new image
         
         Arguments:
@@ -27,7 +27,6 @@ class Blob():
         """
 
         # Parameters
-        self.img_raw = img_raw
         self.side = side
         self.thresh = thresh
         self.x_res = x_res
@@ -38,20 +37,22 @@ class Blob():
         self.blobs = np.zeros((1, 2))
         self.no_blobs = 0
 
-    def __del__(self):
-        return
+    def run(self, img):
+        # Initializations
+        self.blob_size = 0
+        self.blobs = np.zeros((1, 2))
+        self.no_blobs = 0
 
-    def blob_detect(self):
         """Runs all subfunctions for blob detection"""
-        img_gray = self._raw_to_gray()
+        img_gray = self._raw_to_gray(img)
         blob_pixels = self._thresholding(img_gray)
         self._continuity(blob_pixels)
 
-    def _raw_to_gray(self):
+    def _raw_to_gray(self, img):
         """Converts the image to grayscale"""
-        img_rgb = np.zeros((self.y_res, self.x_res, 3), dtype=np.uint8)
-        img_rgb = np.array(self.img_raw)
-        img_gray = np.zeros((self.y_res, self.x_res))
+        img_rgb = np.zeros((self.x_res, self.y_res, 3), dtype=np.uint8)
+        img_rgb = np.array(img)
+        img_gray = np.zeros((self.x_res, self.y_res))
         img_gray[:, :] = img_rgb[:, :, 2]
 
         return img_gray
@@ -120,11 +121,11 @@ class Blob():
                 x_center = y_center_temp
                 y_center = x_center_temp
                 # x-forward, y-upward
-                x_center = self.x_res - x_center
-                y_center = self.y_res - y_center
+                x_center = self.y_res - x_center
+                y_center = self.x_res - y_center
                 # x-y-centered
-                x_center = x_center - (self.x_res / 2)
-                y_center = y_center - (self.y_res / 2)
+                x_center = x_center - (self.y_res / 2)
+                y_center = y_center - (self.x_res / 2)
                 # flip image 180 degrees bcs camera mounted upside down
                 if self.side == 'right':
                     x_center = -x_center
@@ -138,3 +139,9 @@ class Blob():
                     self.blobs = np.append(self.blobs, [[x_center, y_center]], axis=0)
         
                 self.no_blobs += 1
+
+    def reflections(self):
+        # discard blobs that are reflected on the surface, keep single lowest blob only
+        if self.blobs.size:
+            blob_ind = np.where(self.blobs == min(self.blobs[:, 1]))
+            self.blobs = self.blobs[blob_ind[0], :]
