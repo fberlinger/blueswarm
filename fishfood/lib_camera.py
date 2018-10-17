@@ -8,7 +8,7 @@ from picamera import PiCamera
 class Camera():
     # camera settings
     picam = PiCamera()
-    picam.resolution = (U_CAM_YRES, U_CAM_XRES) # (hor, ver)
+    picam.resolution = (U_CAM_NRES, U_CAM_MRES) # (hor, ver)
     picam.framerate = 60
     picam.color_effects = (128, 128) # black and white
     picam.awb_mode = 'off'
@@ -26,14 +26,14 @@ class Camera():
         if self.store_img:
             self.no_r = 0
             self.no_l = 0
-        self.img = np.empty((U_CAM_XRES, U_CAM_YRES, 3), dtype=np.uint8)
+        self.img = np.empty((U_CAM_MRES, U_CAM_NRES, 3), dtype=np.uint8)
 
     def capture(self):
         if self.side == 'right':
             GPIO.output(self.CAMLED, False) # set to right cam
             if self.store_img:
                 self.picam.rotation = 180
-                self.picam.capture('{}_r{}.jpg'.format(U_FILENAME, self.no_r), use_video_port=True)
+                self.picam.capture('./{}/{}_r{}.jpg'.format(U_FILENAME, U_FILENAME, self.no_r), use_video_port=True)
                 self.picam.rotation = 0
                 self.no_r += 1
 
@@ -41,7 +41,7 @@ class Camera():
             GPIO.output(self.CAMLED, True) # set to left cam
             if self.store_img:
                 self.picam.rotation = 180
-                self.picam.capture('{}_l{}.jpg'.format(U_FILENAME, self.no_l), use_video_port=True)
+                self.picam.capture('./{}/{}_l{}.jpg'.format(U_FILENAME, U_FILENAME, self.no_l), use_video_port=True)
                 self.picam.rotation = 0
                 self.no_l += 1
 

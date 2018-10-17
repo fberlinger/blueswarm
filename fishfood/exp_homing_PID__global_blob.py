@@ -243,10 +243,10 @@ status = 'home' # ['home', 'orbit']
 depth_ctrl = True # 2D or 3D
 lock_depth = False # use depth sensor once at target depth, set to mm value
 
-caudal = Fin(20, 21, 5)
-dorsal = Fin(19, 26, 5)
-pecto_r = Fin(4, 17, 6)
-pecto_l = Fin(18, 23, 6)
+caudal = Fin(U_FIN_C1, U_FIN_C2, 5) # freq
+dorsal = Fin(U_FIN_D1, U_FIN_D2, 5) # freq
+pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 6) # freq
+pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 6) # freq
 leds = LEDS()
 cam_r = Camera('right')
 cam_l = Camera('left')
