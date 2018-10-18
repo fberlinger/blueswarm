@@ -1,4 +1,5 @@
 import time
+import numpy as np
 from math import *
 
 U_FILENAME = time.strftime("%y%m%d_%H%M%S") # date_time
@@ -67,18 +68,18 @@ U_CAM_c = 1.000095457005999
 U_CAM_d = 1.348821585691861e-04
 U_CAM_e = -2.766447240107194e-05
 U_CAM_ss = 100 * np.array([-5.506324725325824, 0, 0.000004199699653, -0.000000000365763, 0.000000000002906])
-U_CAM_ss = np.flip(ss, 0)
+U_CAM_ss = np.flip(U_CAM_ss, 0)
 # resolution
 U_CAM_MRES = 144 # U_CAM_MRES has to be multiple of 16, U_CAM_NRES of 32
 U_CAM_NRES = 192 # aspect ratio U_CAM_NRES / U_CAM_MRES has to be 4 / 3
 # mounting
-U_CAM_ALPHA = 10 * pi / 180 # [rad] camera mounting angle
+U_CAM_ALPHA = -10 * pi / 180 # [rad] camera mounting angle
 U_CAM_DX = 25 # [mm] camera x-offset to center of rotation
 U_CAM_DY = 20 # [mm] camera y-offset to center of rotation
 
 # LEDS
 U_LED_DX = 84 # [mm] leds x-distance
-U_LED_DZ = 84 # [mm] leds y-distance
+U_LED_DZ = 84 # [mm] leds z-distance
 
 # BLOB
-U_BLOB_TRESH = 60 # default detection threshold
+U_BLOB_THRESH = 60 # default detection threshold
