@@ -113,14 +113,14 @@ def home(blobs_right, blobs_left, total_blob_pixels):
         pectol.on()
         pector.off()
 
-        if (blobs_right[0, 0] > 50):
+        if (blobs_right[0, 0] > 55):
             caudal.on()
         else:
             caudal.off()
 
     # blob to the left
     elif blobs_left.size:
-        freq_r = 2 + 6 * (U_CAM_YRES/2 - blobs_left[0, 0]) / U_CAM_YRES
+        freq_r = 2 + 8 * (U_CAM_YRES/2 - blobs_left[0, 0]) / U_CAM_YRES
         pector.set_frequency(abs(freq_r))
         #print('freq_r is {}'.format(freq_r))
 
@@ -128,7 +128,7 @@ def home(blobs_right, blobs_left, total_blob_pixels):
         pector.on()
         pectol.off()
 
-        if (blobs_left[0, 0] > 50):
+        if (blobs_left[0, 0] > 55):
             caudal.on()
         else:
             caudal.off()
@@ -228,6 +228,10 @@ def main(run_time=60):
         log_blobs(round(t_passed, 3), blobs_r, 'right')
         log_blobs(round(t_passed, 3), blobs_l, 'left')
 
+        # delete class instances to avoid memory overload
+        del blobs_right
+        del blobs_left
+
     terminate()
 
 
@@ -246,4 +250,4 @@ leds = LEDS()
 
 time.sleep(5)
 initialize()
-main(50)
+main(120)

@@ -38,6 +38,9 @@ class Blob():
         self.blobs = np.zeros((1, 2))
         self.no_blobs = 0
 
+    def __del__(self):
+        return
+
     def blob_detect(self):
         """Runs all subfunctions for blob detection"""
         img_gray = self._raw_to_gray()
@@ -131,14 +134,7 @@ class Blob():
                     self.blobs[0, 0] = x_center
                     self.blobs[0, 1] = y_center
 
-                    # only for calib:
-                    #self.blobs[0, 0] = self.y_res - x_center_temp
-                    #self.blobs[0, 1] = self.x_res - y_center_temp
-
                 else:
                     self.blobs = np.append(self.blobs, [[x_center, y_center]], axis=0)
-
-                    # only for calib:
-                    #self.blobs = np.append(self.blobs, [[self.y_res - x_center_temp, self.x_res - y_center_temp]], axis=0)
         
                 self.no_blobs += 1
