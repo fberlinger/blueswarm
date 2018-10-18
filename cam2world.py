@@ -41,7 +41,7 @@ def compute_global_coordinates(pqr):
     q2 = M[1, 1]
     r2 = M[2, 1]
 
-    if r2 > r1:
+    if r2 < r1:
         ptemp = p1
         qtemp = q1
         rtemp = r1
@@ -54,7 +54,7 @@ def compute_global_coordinates(pqr):
         q2 = qtemp
         r2 = rtemp
 
-    delta = 6
+    delta = 60
 
     a = r2**2 - r1**2
     b = 2*delta*r1*(r2**2 - 1)
@@ -86,8 +86,7 @@ def compute_global_coordinates(pqr):
 
 
 if __name__ == "__main__":
-    m = np.array([[36.8, 40.6], [94.6, 94.6]])
-    # m = np.array([[40.6, 36.8], [94.6, 94.6]])
+    m = np.array([[0.99395715, -0.042459, 0.10122456], [0.99856163, -0.05234391, 0.01160994]]).T
     print(m)
 
     global_coords = compute_global_coordinates(m)
