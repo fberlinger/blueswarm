@@ -41,6 +41,19 @@ def compute_global_coordinates(pqr):
     q2 = M[1, 1]
     r2 = M[2, 1]
 
+    if r2 > r1:
+        ptemp = p1
+        qtemp = q1
+        rtemp = r1
+
+        p1 = p2
+        q1 = q2
+        r1 = r2
+
+        p2 = ptemp
+        q2 = qtemp
+        r2 = rtemp
+
     delta = 6
 
     a = r2**2 - r1**2
