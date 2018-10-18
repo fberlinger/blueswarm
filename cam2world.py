@@ -30,51 +30,45 @@ def cam2world(m):
 
     return M
 
-def compute_global_coordinates(m):
-    M = cam2world(m)
+def compute_global_coordinates(pqr):
+    M = pqr
 
-    p0 = M[0, 0]
-    q0 = M[1, 0]
-    r0 = M[2, 0]
+    p1 = M[0, 0]
+    q1 = M[1, 0]
+    r1 = M[2, 0]
 
-    p1 = M[0, 1]
-    q1 = M[1, 1]
-    r1 = M[2, 1]
+    p2 = M[0, 1]
+    q2 = M[1, 1]
+    r2 = M[2, 1]
 
     delta = 6
 
-    a = p1**2 - p0**2
-    b = 2*delta*p0*(p1**2 - 1)
-    c = (delta**2)*(p1**2 - 1)
+    a = r2**2 - r1**2
+    b = 2*delta*r1*(r2**2 - 1)
+    c = (delta**2)*(r2**2 - 1)
 
-    d0_plus = (-b + sqrt(b**2 - 4*a*c)) / (2*a)
-    d0_minus = (-b - sqrt(b**2 - 4*a*c)) / (2*a)
+    d1_plus = (-b + sqrt(b**2 - 4*a*c)) / (2*a)
+    d1_minus = (-b - sqrt(b**2 - 4*a*c)) / (2*a)
 
-    d0 = d0_plus
-    x = p0*d0
-    d1 = (x + delta)/p1
-    diff_y = abs(d0*q0 - d1*q1)
-    diff_z = abs(d0*r0 - d1*r1)
-    diff_plus = diff_y + diff_z
+    d1 = d1_plus
+    z = d1*r1
+    d2 = (z + delta)/r2
+    diff_x = abs(d1*p1 - d2*p2)
+    diff_y = abs(d1*q1 - d2*q2)
+    diff_plus = diff_x + diff_y
 
-    d0 = d0_minus
-    x = p0*d0
-    d1 = (x + delta)/p1
-    diff_y = abs(d0*q0 - d1*q1)
-    diff_z = abs(d0*r0 - d1*r1)
-    diff_minus = diff_y + diff_z
+    d1 = d1_minus
+    z = d1*r1
+    d2 = (z + delta)/r2
+    diff_x = abs(d1*p1 - d2*p2)
+    diff_y = abs(d1*q1 - d2*q2)
+    diff_minus = diff_x + diff_y
 
     if (diff_plus < diff_minus):
-        result = d0_plus*np.array([[p0, q0, r0]]).T
+        result = d1_plus*np.array([[p1, q1, r1]]).T
     else:
-        result = d0_minus*np.array([[p0, q0, r0]]).T
-
-    print(d0_plus)
-    print(d0_minus)
-
-    # print(diff_plus)
-    # print(diff_minus)
-
+        result = d1_minus*np.array([[p1, q1, r1]]).T
+        
     return result
 
 
