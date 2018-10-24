@@ -127,4 +127,4 @@ class DepthSensor():
 
 		self.pressure_mbar = pressure
 		self.temperature_celsius = cTemp
-		self.depth_mm = max(0, (pressure - self._surface_pressure) * 10.197162129779) # TODO
+		self.depth_mm = max(0, (pressure - self._surface_pressure) * 10.197162129779)

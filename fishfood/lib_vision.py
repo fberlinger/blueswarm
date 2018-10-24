@@ -11,10 +11,10 @@ from lib_globalblob import GBlob
 class Vision():
 
     def __init__(self):
-        self._cam_r = Camera('right')
+        self._cam_r = Camera('right', True)
         self._cam_l = Camera('left')
-        self._blob_r = GBlob('right', 15) # detection threshold
-        self._blob_l = GBlob('left', 15) # detection threshold
+        self._blob_r = GBlob('right', 40) # detection threshold
+        self._blob_l = GBlob('left', 40) # detection threshold
 
         self.xyz_r = np.zeros((3, 1))
         self.xyz_l = np.zeros((3, 1))
@@ -126,7 +126,7 @@ class Vision():
             r2 = rtemp
 
         delta = U_LED_DZ
-        delta = 90 # 60
+        #delta = 90 # 60
 
         a = r2**2 - r1**2
         b = 2 * delta * r1 * (r2**2 - 1)
@@ -150,9 +150,9 @@ class Vision():
         diff_minus = diff_x + diff_y
 
         if (diff_plus < diff_minus):
-            xyz = d1_plus * np.array([[p1, q1, r1]]).T
+            xyz = d1_plus * pqr
         else:
-            xyz = d1_minus * np.array([[p1, q1, r1]]).T
+            xyz = d1_minus * pqr
             
         return xyz
 

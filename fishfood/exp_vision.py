@@ -82,27 +82,27 @@ def depth_ctrl_from_depthsensor(thresh=10):
     elif depth_sensor.depth_mm < (lock_depth - thresh):
         dorsal.on()
 
-def orbit():
-	dist = np.linalg.norm(vision.xyz_r[0:2, 0]) # 2D, ignoring z
+def orbit(target_dist):
+    dist = np.linalg.norm(vision.xyz_r[0:2, 0]) # 2D, ignoring z
     x_pos = vision.xyz_r[0, 0]
     if dist > target_dist:
         if x_pos > 0:
             print('fwd')
-            #pecto_r.off()
-        	#pecto_l.off()
+            pecto_r.off()
+            pecto_l.off()
         else:
             print('cw')
-            #pecto_l.on()
-        	#pecto_r.off()
+            pecto_l.on()
+            pecto_r.off()
     else:
         if x_pos > 0:
             print('ccw')
-            #pecto_r.on()
-        	#pecto_l.off()
+            pecto_r.on()
+            pecto_l.off()
         else:
             print('fwd')
-            #pecto_r.off()
-        	#pecto_l.off()
+            pecto_r.off()
+            pecto_l.off()
 
 def main(run_time=60, target_dist=500): # [s, mm]
     t_start = time.time()
@@ -112,17 +112,21 @@ def main(run_time=60, target_dist=500): # [s, mm]
         times = vision.update()
 
         # keep depth
-        depth_ctrl_from_depthsensor()
+        # depth_ctrl_from_depthsensor()
         # orbit if 2 blobs are visible
         if vision.xyz_r.size:
-        	caudal.on()
-        	orbit()
+            dist = np.linalg.norm(vision.xyz_r[0:2, 0]) # 2D, ignoring z
+            x_pos = vision.xyz_r[0, 0]
+            caudal.on()
+            orbit(target_dist)
         else:
-        	caudal.off()
+            caudal.off()
+            pecto_r.off()
+            pecto_l.off()
             dist = -1
-        	x_pos = 1000
+            x_pos = 1000
 
-		# log status and centroids
+        # log status and centroids
         t_passed = time.time() - t_start
         log_status(t_passed, times[0], times[1], times[2], times[3], times[4], dist, x_pos, status)
         log_centroids(round(t_passed, 3), 'right')
@@ -132,7 +136,7 @@ def main(run_time=60, target_dist=500): # [s, mm]
 # homing plus orbiting, 2D or 3D
 status = 'orbit' # ['home', 'orbit']
 depth_ctrl = True # 2D or 3D
-lock_depth = 800 # use depth sensor once at target depth, set to mm value
+lock_depth = 500 # use depth sensor once at target depth, set to mm value
 
 caudal = Fin(U_FIN_C1, U_FIN_C2, 3) # freq
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq
@@ -142,7 +146,7 @@ leds = LEDS()
 vision = Vision()
 depth_sensor = DepthSensor()
 
-time.sleep(0.1)
+time.sleep(1)
 initialize()
-main(60, 250) # run time
+main(10, 200) # run time, target distance
 terminate()
