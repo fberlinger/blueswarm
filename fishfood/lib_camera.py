@@ -13,8 +13,8 @@ class Camera():
     picam.color_effects = (128, 128) # black and white
     picam.awb_mode = 'off'
     picam.awb_gains = (1, 1)
-    picam.iso = 120
-    picam.brightness = 30
+    picam.iso = 125
+    picam.brightness = 35
     picam.contrast = 100
     CAMLED = 40
     GPIO.setup(CAMLED, GPIO.OUT)

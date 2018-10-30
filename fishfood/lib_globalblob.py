@@ -45,6 +45,7 @@ class GBlob():
         img_gray = self._raw_to_gray(img)
         blob_pixels = self._thresholding(img_gray)
         self._continuity(blob_pixels)
+        self.reflections()
 
     def _raw_to_gray(self, img):
         """Converts the image to grayscale"""
@@ -129,6 +130,8 @@ class GBlob():
 
     def reflections(self):
         # discard blobs that are reflected on the surface, keep single lowest blob only
-        if self.blobs.size:
-            blob_ind = np.where(self.blobs == min(self.blobs[:, 1]))
-            self.blobs = self.blobs[blob_ind[0], :]
+        if self.no_blobs > 2:
+            #print(self.blobs)
+            blob_ind = np.argsort(self.blobs[0, :])[-2:]
+            self.blobs = self.blobs[:, blob_ind]
+            #print(self.blobs)

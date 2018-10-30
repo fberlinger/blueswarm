@@ -11,7 +11,7 @@ from lib_globalblob import GBlob
 class Vision():
 
     def __init__(self):
-        self._cam_r = Camera('right', True)
+        self._cam_r = Camera('right')
         self._cam_l = Camera('left')
         self._blob_r = GBlob('right', 40) # detection threshold
         self._blob_l = GBlob('left', 40) # detection threshold
@@ -21,35 +21,35 @@ class Vision():
 
     def update(self):
         # check right side
-        t_now = time.time()
+        #t_now = time.time()
         self._cam_r.capture()
-        t_capture = time.time() - t_now
-        t_now = time.time()
+        #t_capture = time.time() - t_now
+        #t_now = time.time()
         self._blob_r.detect(self._cam_r.img)
-        t_blob = time.time() - t_now
+        #t_blob = time.time() - t_now
 
         # check left side
         self._cam_l.capture()
         self._blob_l.detect(self._cam_l.img)
         
         # if blobs detected, transform them to world coordinates in the robot frame
-        t_uvw = -1
-        t_pqr = -1
-        t_xyz = -1
+        #t_uvw = -1
+        #t_pqr = -1
+        #t_xyz = -1
         if self._blob_r.blobs.size:
             # transform from image coordinates to coordinates on the unit sphere in the camera frame
-            t_now = time.time()
+            #t_now = time.time()
             uvw_r = self._mn_to_uvw(self._blob_r.blobs)
-            t_uvw = time.time() - t_now
+            #t_uvw = time.time() - t_now
             # align camera frame with robot frame
-            t_now = time.time()
+            #t_now = time.time()
             pqr_r = self._uvw_to_pqr_r(uvw_r)
-            t_pqr = time.time() - t_now
+            #t_pqr = time.time() - t_now
             # use blob pairs to get world coordinates in mm
             if pqr_r.shape[1] == 2:
-                t_now = time.time()
+                #t_now = time.time()
                 self.xyz_r = self._pqr_to_xyz(pqr_r)
-                t_xyz = time.time() - t_now
+                #t_xyz = time.time() - t_now
             else:
                 self.xyz_r = np.zeros(0)
         else:
@@ -68,7 +68,7 @@ class Vision():
         else:
             self.xyz_l = np.zeros(0)
 
-        return t_capture, t_blob, t_uvw, t_pqr, t_xyz
+        #return t_capture, t_blob, t_uvw, t_pqr, t_xyz
 
     def _mn_to_uvw(self, mn):
         scaling_factor = 2592 / U_CAM_NRES
@@ -126,7 +126,7 @@ class Vision():
             r2 = rtemp
 
         delta = U_LED_DZ
-        #delta = 90 # 60
+        delta = 150 # 60
 
         a = r2**2 - r1**2
         b = 2 * delta * r1 * (r2**2 - 1)

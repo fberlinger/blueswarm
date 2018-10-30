@@ -5,7 +5,7 @@ GPIO.setmode(GPIO.BCM)
 import os
 import csv
 import time
-import math
+from math import *
 import threading
 import numpy as np
 from picamera import PiCamera
@@ -15,6 +15,7 @@ from lib_fin import Fin
 from lib_leds import LEDS
 from lib_vision import Vision
 from lib_depthsensor import DepthSensor
+from lib_ema import EMA
 
 os.makedirs('./{}/'.format(U_FILENAME))
 
@@ -27,11 +28,13 @@ def initialize():
     # logger instance for overall status
     with open('./{}/{}_status.log'.format(U_FILENAME, U_FILENAME), 'w') as f:
         f.truncate()
-        f.write('t_passed :: t_capture::   t_blob ::    t_uvw ::    t_pqr ::    t_xyz :: distance ::    x_pos :: status\n')
+        #f.write('t_passed :: t_capture::   t_blob ::    t_uvw ::    t_pqr ::    t_xyz :: distance ::    x_pos :: status\n')
+        f.write('t_passed :: distance ::    x_pos :: status\n')
 
     leds.on()
     time.sleep(1)
     leds.off()
+    time.sleep(1)
 
 def terminate():
     caudal.terminate()
@@ -45,10 +48,19 @@ def terminate():
 
     GPIO.cleanup()
 
+'''
 def log_status(t_passed, t_capture, t_blob, t_uvw, t_pqr, t_xyz, distance, x_pos, status):
     with open('./{}/{}_status.log'.format(U_FILENAME, U_FILENAME), 'a') as f:
         f.write(
             '  {:6.3f} ::   {:6.3f} ::   {:6.3f} ::   {:6.3f} ::   {:6.3f} ::   {:6.3f} ::     {:4.0f} ::     {:4.0f} ::   {}\n'.format(t_passed, t_capture, t_blob, t_uvw, t_pqr, t_xyz, distance, x_pos, status
+                )
+            )
+'''
+
+def log_status(t_passed, distance, x_pos, status):
+    with open('./{}/{}_status.log'.format(U_FILENAME, U_FILENAME), 'a') as f:
+        f.write(
+            '  {:6.3f} ::     {:4.0f} ::     {:4.0f} ::   {}\n'.format(t_passed, distance, x_pos, status
                 )
             )
 
@@ -58,7 +70,7 @@ def log_centroids(t_passed, side):
     elif (side == 'left'):
         centroids = vision.xyz_l
 
-    max_centroids = 3 * 5
+    max_centroids = 3 * 3
     centroid_list = U_CAM_NRES * np.ones((3, max_centroids)) # non-blob entries are set to U_CAM_NRES
     if centroids.size:
         centroid_list[:centroids.shape[0], :centroids.shape[1]] = centroids
@@ -74,7 +86,38 @@ def log_centroids(t_passed, side):
             row.append(centroid_list[0, i])
         writer.writerow(row)
 
-def depth_ctrl_from_depthsensor(thresh=10):
+def depth_ctrl_from_cam():
+    right = vision.xyz_r
+    left = vision.xyz_l
+
+    if not right.size and not left.size:
+        print('move up')
+        dorsal.off()
+        return
+
+    if not right.size:
+        right = left
+    elif not left.size:
+        left = right
+
+    if ((right[2, 1] + left[2, 1]) / 2) > 5:
+        print('move down')
+        dorsal.on()
+    elif ((right[2, 1] + left[2, 1]) / 2) < -5:
+        print('move up')
+        dorsal.off()
+
+    '''
+    # pressure sensor takeover. is not distance invariant, so start only when orbiting at fixed distance
+    if status == 'orbit' and abs(((blobs_right[1, 0] + blobs_left[1, 0]) / 2) - (U_CAM_MRES / 2)) < 15:
+        depth_sensor.update()
+        global lock_depth
+        lock_depth = depth_sensor.depth_mm # i.e., lock_depth not false anymore
+        global depth_ctrl
+        depth_ctrl = False
+    '''
+
+def depth_ctrl_from_depthsensor(thresh=5):
     depth_sensor.update()
 
     if depth_sensor.depth_mm > (lock_depth + thresh):
@@ -82,25 +125,108 @@ def depth_ctrl_from_depthsensor(thresh=10):
     elif depth_sensor.depth_mm < (lock_depth - thresh):
         dorsal.on()
 
+def home():
+    blobs_right = vision._blob_r.blobs
+    blobs_left = vision._blob_l.blobs
+
+    # blob in front
+    if blobs_right.size and blobs_left.size:
+        caudal.on()
+        
+        '''
+        # keep centered
+        if (blobs_right[0, 0] > blobs_left[0, 0] + 5):
+            pecto_r.set_frequency(2.5)
+            pecto_r.on()
+            pecto_l.off()
+            print('move fwd and ccw')
+        elif (blobs_left[0, 0] > blobs_right[0, 0] + 5):
+            pecto_l.set_frequency(2.5)
+            pecto_l.on()
+            pecto_r.off()
+            print('move fwd and cw')
+        else:
+            print('move fwd')
+            pecto_r.off()
+            pecto_l.off()
+        '''
+
+    # blob to the right
+    elif blobs_right.size:
+        freq_l = 2 + 8 * blobs_right[1, 0] / U_CAM_NRES
+        pecto_l.set_frequency(abs(freq_l))
+
+        #print('turn cw')
+        pecto_l.on()
+        pecto_r.off()
+
+        if (blobs_right[1, 0] < 75):
+            caudal.on()
+        else:
+            caudal.off()
+
+    # blob to the left
+    elif blobs_left.size:
+        freq_r = 2 + 8 * (U_CAM_NRES - blobs_left[1, 0]) / U_CAM_NRES
+        pecto_r.set_frequency(abs(freq_r))
+
+        #print('turn ccw')
+        pecto_r.on()
+        pecto_l.off()
+
+        if (blobs_left[1, 0] > (U_CAM_NRES - 75)):
+            caudal.on()
+        else:
+            caudal.off()
+
+    # blob behind or lost
+    else:
+        #print('lost blob, wait')
+        pecto_r.set_frequency(4)
+        pecto_r.on()
+        pecto_l.off()
+        caudal.off()
+
+def transition():
+    caudal.off()
+    pecto_l.off()
+    pecto_r.set_frequency(8)
+    pecto_r.on()
+
+    heading = np.arctan2(vision.xyz_r[1, 1], vision.xyz_r[0, 1]) * 180 / pi
+
+    print(heading)
+
+    if heading > 60:
+        pecto_r.off()
+        global status
+        status = 'orbit'
+
 def orbit(target_dist):
-    dist = np.linalg.norm(vision.xyz_r[0:2, 0]) # 2D, ignoring z
-    x_pos = vision.xyz_r[0, 0]
+    dist = np.linalg.norm(vision.xyz_r[:, 1]) # 2D, ignoring z
+    x_pos = vision.xyz_r[0, 1]
     if dist > target_dist:
         if x_pos > 0:
-            print('fwd')
+            #print('fwd')
+            caudal.set_frequency(2.2)
             pecto_r.off()
             pecto_l.off()
         else:
-            print('cw')
+            #print('cw')
+            caudal.set_frequency(1.4)
+            pecto_l.set_frequency(8)
             pecto_l.on()
             pecto_r.off()
     else:
         if x_pos > 0:
-            print('ccw')
+            #print('ccw')
+            caudal.set_frequency(2.2)
+            pecto_r.set_frequency(8)
             pecto_r.on()
             pecto_l.off()
         else:
-            print('fwd')
+            #print('fwd')
+            caudal.set_frequency(2.2)
             pecto_r.off()
             pecto_l.off()
 
@@ -109,44 +235,66 @@ def main(run_time=60, target_dist=500): # [s, mm]
     
     while time.time() - t_start < run_time:
         # check environment and find blob centroids of leds
-        times = vision.update()
+        vision.update()
 
-        # keep depth
-        # depth_ctrl_from_depthsensor()
+        # control depth
+        if depth_ctrl:
+            depth_ctrl_from_cam()
+        elif lock_depth:
+            depth_ctrl_from_depthsensor()
+
         # orbit if 2 blobs are visible
         if vision.xyz_r.size:
-            dist = np.linalg.norm(vision.xyz_r[0:2, 0]) # 2D, ignoring z
-            x_pos = vision.xyz_r[0, 0]
-            caudal.on()
-            orbit(target_dist)
+            dist = np.linalg.norm(vision.xyz_r[:, 1])
+            x_pos = vision.xyz_r[0, 1]
+        elif vision.xyz_l.size:
+            dist = np.linalg.norm(vision.xyz_l[:, 1])
+            x_pos = vision.xyz_l[0, 1]
         else:
             caudal.off()
             pecto_r.off()
             pecto_l.off()
-            dist = -1
-            x_pos = 1000
+            dist = 9999
+            x_pos = 9999
+
+        # act based on status
+        global status
+        if status == 'home':
+            dist_filtered = ema.update_ema(dist)
+            if dist_filtered < target_dist * 1.5:
+                status = 'transition'
+            else:
+                home()
+        elif status == 'transition':
+            transition()
+        elif status == 'orbit':
+            caudal.on()
+            orbit(target_dist)    
 
         # log status and centroids
         t_passed = time.time() - t_start
-        log_status(t_passed, times[0], times[1], times[2], times[3], times[4], dist, x_pos, status)
+        log_status(t_passed, dist, x_pos, status)
         log_centroids(round(t_passed, 3), 'right')
-        #log_centroids(round(t_passed, 3), 'left')
+        log_centroids(round(t_passed, 3), 'left')
 
 
 # homing plus orbiting, 2D or 3D
-status = 'orbit' # ['home', 'orbit']
+status = 'home' # ['home', 'transition', 'orbit']
 depth_ctrl = True # 2D or 3D
-lock_depth = 500 # use depth sensor once at target depth, set to mm value
+lock_depth = False # 320 # use depth sensor once at target depth, set to mm value
 
-caudal = Fin(U_FIN_C1, U_FIN_C2, 3) # freq
+caudal = Fin(U_FIN_C1, U_FIN_C2, 2.2) # freq
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq
-pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 6) # freq
-pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 6) # freq
+pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 8) # freq
+pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq
 leds = LEDS()
 vision = Vision()
 depth_sensor = DepthSensor()
+ema = EMA(0.3)
 
-time.sleep(1)
+time.sleep(12)
 initialize()
-main(10, 200) # run time, target distance
+leds.on()
+main(180, 400) # run time, target distance
+leds.off()
 terminate()
