@@ -5,7 +5,7 @@ import time
 from math import *
 from lib_utils import *
 from lib_camera import Camera
-from lib_globalblob import GBlob
+from lib_blob import Blob
 
 
 class Vision():
@@ -13,9 +13,11 @@ class Vision():
     def __init__(self):
         self._cam_r = Camera('right')
         self._cam_l = Camera('left')
-        self._blob_r = GBlob('right', 40) # detection threshold
-        self._blob_l = GBlob('left', 40) # detection threshold
+        self._blob_r = Blob('right', 40) # detection threshold
+        self._blob_l = Blob('left', 40) # detection threshold
 
+        self.pqr_r = np.zeros((3, 1))
+        self.pqr_l = np.zeros((3, 1))
         self.xyz_r = np.zeros((3, 1))
         self.xyz_l = np.zeros((3, 1))
 
@@ -43,29 +45,31 @@ class Vision():
             #t_uvw = time.time() - t_now
             # align camera frame with robot frame
             #t_now = time.time()
-            pqr_r = self._uvw_to_pqr_r(uvw_r)
+            self.pqr_r = self._uvw_to_pqr_r(uvw_r)
             #t_pqr = time.time() - t_now
             # use blob pairs to get world coordinates in mm
-            if pqr_r.shape[1] == 2:
+            if self.pqr_r.shape[1] == 2:
                 #t_now = time.time()
-                self.xyz_r = self._pqr_to_xyz(pqr_r)
+                self.xyz_r = self._pqr_to_xyz(self.pqr_r)
                 #t_xyz = time.time() - t_now
             else:
                 self.xyz_r = np.zeros(0)
         else:
+            self.pqr_r = np.zeros(0)
             self.xyz_r = np.zeros(0)
 
         if self._blob_l.blobs.size:
             # transform from image coordinates to coordinates on the unit sphere in the camera frame
             uvw_l = self._mn_to_uvw(self._blob_l.blobs)
             # align camera frame with robot frame
-            pqr_l = self._uvw_to_pqr_l(uvw_l)
+            self.pqr_l = self._uvw_to_pqr_l(uvw_l)
             # use blob pairs to get world coordinates in mm
-            if pqr_l.shape[1] == 2:
-                self.xyz_l = self._pqr_to_xyz(pqr_l)
+            if self.pqr_l.shape[1] == 2:
+                self.xyz_l = self._pqr_to_xyz(self.pqr_l)
             else:
                 self.xyz_l = np.zeros(0)
         else:
+            self.pqr_l = np.zeros(0)
             self.xyz_l = np.zeros(0)
 
         #return t_capture, t_blob, t_uvw, t_pqr, t_xyz

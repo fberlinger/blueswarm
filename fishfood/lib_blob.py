@@ -14,7 +14,7 @@ class Blob():
     belong to single blobs, and calculate the center of each blob.
     """
 
-    def __init__(self, img_raw, side, thresh=60, x_res=U_CAM_XRES, y_res=U_CAM_YRES):
+    def __init__(self, side, thresh=U_BLOB_THRESH):
         """Load a new image
         
         Arguments:
@@ -27,31 +27,31 @@ class Blob():
         """
 
         # Parameters
-        self.img_raw = img_raw
         self.side = side
         self.thresh = thresh
-        self.x_res = x_res
-        self.y_res = y_res
 
         # Initializations
         self.blob_size = 0
-        self.blobs = np.zeros((1, 2))
+        self.blobs = np.zeros((2, 1))
         self.no_blobs = 0
 
-    def __del__(self):
-        return
+    def detect(self, img):
+        # Initializations
+        self.blob_size = 0
+        self.blobs = np.zeros((2, 1))
+        self.no_blobs = 0
 
-    def blob_detect(self):
         """Runs all subfunctions for blob detection"""
-        img_gray = self._raw_to_gray()
+        img_gray = self._raw_to_gray(img)
         blob_pixels = self._thresholding(img_gray)
         self._continuity(blob_pixels)
+        self.reflections()
 
-    def _raw_to_gray(self):
+    def _raw_to_gray(self, img):
         """Converts the image to grayscale"""
-        img_rgb = np.zeros((self.y_res, self.x_res, 3), dtype=np.uint8)
-        img_rgb = np.array(self.img_raw)
-        img_gray = np.zeros((self.y_res, self.x_res))
+        img_rgb = np.zeros((U_CAM_MRES, U_CAM_NRES, 3), dtype=np.uint8)
+        img_rgb = np.array(img)
+        img_gray = np.zeros((U_CAM_MRES, U_CAM_NRES))
         img_gray[:, :] = img_rgb[:, :, 2]
 
         return img_gray
@@ -82,59 +82,56 @@ class Blob():
             self.blobs = np.zeros(0)
             return
 
-        # Find pixels that are continuous in x-direction
-        x = blob_pixels[0, :]
-        x_shifted = np.zeros(x.shape)
-        x_shifted[1:-1] = np.copy(x[:-2])
-        x_shifted[0] = -1
-        x_shifted[-1] = -1
+        # Find pixels that are continuous in m-direction
+        m = blob_pixels[0, :]
+        m_shifted = np.zeros(m.shape)
+        m_shifted[1:-1] = np.copy(m[:-2])
+        m_shifted[0] = -1
+        m_shifted[-1] = -1
 
-        blob_x = np.where(abs(x_shifted - x) > 1)
-        blob_x = np.asarray(blob_x)
-        blob_x[:, -1] += 1
+        blob_m = np.where(abs(m_shifted - m) > 1)
+        blob_m = np.asarray(blob_m)
+        blob_m[:, -1] += 1
 
-        # For each continous set in x-direction, find pixels that are also continuous in y-direction
-        for i in range(0, blob_x.shape[1]-1):
-            x = blob_pixels[0, blob_x[0, i]:blob_x[0, i+1]]
-            y = blob_pixels[1, blob_x[0, i]:blob_x[0, i+1]]
-            arg_y = np.argsort(y)
-            y_sorted = np.sort(y)
+        # For each continous set in m-direction, find pixels that are also continuous in n-direction
+        for i in range(0, blob_m.shape[1]-1):
+            m = blob_pixels[0, blob_m[0, i]:blob_m[0, i+1]]
+            n = blob_pixels[1, blob_m[0, i]:blob_m[0, i+1]]
+            arg_n = np.argsort(n)
+            n_sorted = np.sort(n)
             
-            y_shifted = np.zeros(y.shape)
-            y_shifted[1:-1] = np.copy(y_sorted[:-2])
-            y_shifted[0] = -1
-            y_shifted[-1] = -1
+            n_shifted = np.zeros(n.shape)
+            n_shifted[1:-1] = np.copy(n_sorted[:-2])
+            n_shifted[0] = -1
+            n_shifted[-1] = -1
 
-            blob_y = np.where(abs(y_shifted - y_sorted) > 1)
-            blob_y = np.asarray(blob_y)
-            blob_y[:, -1] += 1
+            blob_n = np.where(abs(n_shifted - n_sorted) > 1)
+            blob_n = np.asarray(blob_n)
+            blob_n[:, -1] += 1
             
-            # For pixels continuous in x- and y-direction, find centroids
-            for j in range(0, blob_y.shape[1]-1):
-                blob_indices = arg_y[np.asscalar(blob_y[:, j]):np.asscalar(blob_y[:, j+1])]
-                x_center_temp = round(sum(x[blob_indices])/blob_indices.shape[0], 3)
-                y_center_temp = round(sum(y[blob_indices])/blob_indices.shape[0], 3)
+            # For pixels continuous in m- and n-direction, find centroids
+            for j in range(0, blob_n.shape[1]-1):
+                blob_indices = arg_n[np.asscalar(blob_n[:, j]):np.asscalar(blob_n[:, j+1])]
+                m_center = round(sum(m[blob_indices])/blob_indices.shape[0], 3)
+                n_center = round(sum(n[blob_indices])/blob_indices.shape[0], 3)
 
-                # coordinate system with origin at image center, x-axis looking forward, y-axis looking upward
-                # x-horizontal, y-vertical
-                x_center = y_center_temp
-                y_center = x_center_temp
-                # x-forward, y-upward
-                x_center = self.x_res - x_center
-                y_center = self.y_res - y_center
-                # x-y-centered
-                x_center = x_center - (self.x_res / 2)
-                y_center = y_center - (self.y_res / 2)
                 # flip image 180 degrees bcs camera mounted upside down
-                if self.side == 'right':
-                    x_center = -x_center
-                y_center = -y_center
+                m_center = U_CAM_MRES - m_center
+                n_center = U_CAM_NRES - n_center
 
                 if self.no_blobs == 0:
-                    self.blobs[0, 0] = x_center
-                    self.blobs[0, 1] = y_center
+                    self.blobs[0, 0] = m_center
+                    self.blobs[1, 0] = n_center
 
                 else:
-                    self.blobs = np.append(self.blobs, [[x_center, y_center]], axis=0)
+                    self.blobs = np.append(self.blobs, [[m_center], [n_center]], axis=1)
         
                 self.no_blobs += 1
+
+    def reflections(self):
+        # discard blobs that are reflected on the surface, keep single lowest blob only
+        if self.no_blobs > 2:
+            #print(self.blobs)
+            blob_ind = np.argsort(self.blobs[0, :])[-2:]
+            self.blobs = self.blobs[:, blob_ind]
+            #print(self.blobs)

@@ -5,9 +5,9 @@ GPIO.setmode(GPIO.BCM)
 import os
 import csv
 import time
-from math import *
 import threading
 import numpy as np
+from math import *
 from picamera import PiCamera
 
 from lib_utils import *
@@ -193,11 +193,14 @@ def transition():
     pecto_r.set_frequency(8)
     pecto_r.on()
 
-    heading = np.arctan2(vision.xyz_r[1, 1], vision.xyz_r[0, 1]) * 180 / pi
+    if vision.xyz_r.size:
+        heading = np.arctan2(vision.xyz_r[1, 1], vision.xyz_r[0, 1]) * 180 / pi
+    else:
+        heading = 0
 
-    print(heading)
+    #print(heading)
 
-    if heading > 60:
+    if heading > 45:
         pecto_r.off()
         global status
         status = 'orbit'
@@ -261,15 +264,18 @@ def main(run_time=60, target_dist=500): # [s, mm]
         global status
         if status == 'home':
             dist_filtered = ema.update_ema(dist)
-            if dist_filtered < target_dist * 1.5:
+            if dist_filtered < target_dist * 1.6:
                 status = 'transition'
             else:
+                #print(home)
                 home()
         elif status == 'transition':
             transition()
         elif status == 'orbit':
             caudal.on()
             orbit(target_dist)    
+
+        #print(status)
 
         # log status and centroids
         t_passed = time.time() - t_start
@@ -295,6 +301,6 @@ ema = EMA(0.3)
 time.sleep(12)
 initialize()
 leds.on()
-main(180, 400) # run time, target distance
+main(120, 400) # run time, target distance
 leds.off()
 terminate()
