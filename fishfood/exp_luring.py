@@ -101,10 +101,10 @@ def depth_ctrl_from_cam():
     pitch = (pitch_r + pitch_l) / 2
     print(pitch)
 
-    if pitch > 2:
+    if pitch > 1:
         print('move down')
-        #dorsal.on()
-    elif pitch < -2:
+        dorsal.on()
+    elif pitch < -1:
         print('move up')
         dorsal.off()
 
@@ -115,7 +115,7 @@ def home():
     # blob behind or lost
     if not right.size and not left.size:
         #print('cant see blob')
-        pecto_r.set_frequency(4)
+        pecto_r.set_frequency(6)
         pecto_r.on()
         pecto_l.off()
         caudal.off()
@@ -135,7 +135,7 @@ def home():
 
     # blob to the right
     if heading > 0:
-        freq_l = 2 + 8 * abs(heading) / 180
+        freq_l = 5 + 5 * abs(heading) / 180
         pecto_l.set_frequency(freq_l)
 
         #print('turn cw')
@@ -149,7 +149,7 @@ def home():
 
     # blob to the left
     elif heading < 0:
-        freq_r = 2 + 8 * abs(heading) / 180
+        freq_r = 5 + 5 * abs(heading) / 180
         pecto_r.set_frequency(freq_r)
 
         #print('turn ccw')
@@ -157,7 +157,6 @@ def home():
         pecto_l.off()
 
         if heading > -20:
-            hello = 0
             caudal.on()
         else:
             caudal.off()
@@ -178,14 +177,14 @@ def main(run_time=60): # [s]
         # log status and centroids
         t_passed = time.time() - t_start
         #log_status(t_passed, dist, x_pos, status)
-        log_centroids(round(t_passed, 3), 'right')
-        log_centroids(round(t_passed, 3), 'left')
+        #log_centroids(round(t_passed, 3), 'right')
+        #log_centroids(round(t_passed, 3), 'left')
 
 
-caudal = Fin(U_FIN_C1, U_FIN_C2, 2.2) # freq
+caudal = Fin(U_FIN_C1, U_FIN_C2, 5) # freq
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq
-pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 3) # freq
-pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 3) # freq
+pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 8) # freq
+pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq
 leds = LEDS()
 vision = Vision()
 depth_sensor = DepthSensor()
@@ -193,6 +192,6 @@ depth_sensor = DepthSensor()
 time.sleep(10)
 initialize()
 leds.on()
-main(120) # run time
+main(180) # run time
 leds.off()
 terminate()

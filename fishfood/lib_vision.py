@@ -13,8 +13,8 @@ class Vision():
     def __init__(self):
         self._cam_r = Camera('right')
         self._cam_l = Camera('left')
-        self._blob_r = Blob('right', 40) # detection threshold
-        self._blob_l = Blob('left', 40) # detection threshold
+        self._blob_r = Blob('right', 1, 40) # max_blobs, detection threshold
+        self._blob_l = Blob('left', 1, 40) # max_blobs, detection threshold
 
         self.pqr_r = np.zeros((3, 1))
         self.pqr_l = np.zeros((3, 1))

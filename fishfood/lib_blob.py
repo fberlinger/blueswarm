@@ -14,7 +14,7 @@ class Blob():
     belong to single blobs, and calculate the center of each blob.
     """
 
-    def __init__(self, side, thresh=U_BLOB_THRESH):
+    def __init__(self, side, max_blobs, thresh=U_BLOB_THRESH):
         """Load a new image
         
         Arguments:
@@ -28,6 +28,7 @@ class Blob():
 
         # Parameters
         self.side = side
+        self.max_blobs = max_blobs 
         self.thresh = thresh
 
         # Initializations
@@ -130,8 +131,8 @@ class Blob():
 
     def reflections(self):
         # discard blobs that are reflected on the surface, keep single lowest blob only
-        if self.no_blobs > 2:
+        if self.no_blobs > self.max_blobs:
             #print(self.blobs)
-            blob_ind = np.argsort(self.blobs[0, :])[-2:]
+            blob_ind = np.argsort(self.blobs[0, :])[-self.max_blobs:]
             self.blobs = self.blobs[:, blob_ind]
             #print(self.blobs)
