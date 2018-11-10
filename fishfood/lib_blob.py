@@ -1,3 +1,5 @@
+"""Blob library, a component of vision library. Detects LED pixels in images and returns centroids of individual LEDs.
+"""
 import RPi.GPIO as GPIO
 
 from lib_utils import *
@@ -6,27 +8,29 @@ import numpy as np
 
 class Blob():
 
-    """Blob detection. Returns coordinates of all blobs
-
-    This class takes a camera image and returns the pixel coordinates of all blobs.
-    It contains functions to convert the image to grayscale, threshold the image to
-    separate blob pixels from background, create lists of indices of pixels which
-    belong to single blobs, and calculate the center of each blob.
+    """Blob takes in a camera image and returns the pixel coordinates (mn) of individual LED blobs.
+    
+    Blob contains functions to convert an image to grayscale, threshold the image to separate blob pixels from background, assign blob pixels to individual blobs, and discard blobs that are reflected at the water surface.
+    
+    Attributes:
+        blob_size (int): Total amount of LED blob pixels
+        blobs (float): Array of blob centroids, (2, no_blobs)
+        max_blobs (int): Amount of blobs expected in image. Additional blobs will be considered reflections and discarded.
+        no_blobs (int): Number of clustered LED blobs
+        side (string): Camera side, right or left
+        thresh (int, optional): Light intensity for pixel to be considered LED blob pixel, [0=LOW,255=HIGH]
     """
 
     def __init__(self, side, max_blobs, thresh=U_BLOB_THRESH):
-        """Load a new image
+        """One Blob object is instantiated for each side, i.e., the right and the left side.
         
-        Arguments:
-            img_raw {} -- camera image
-
-        Keyword Arguments:
-            thresh {int} -- detection threshold that separates background from blob pixels
-            x_res {int} -- x-resolution of the image
-            y_res {int} -- y-resolution of the image
+        Args:
+            side (string): Camera side, right or left
+            max_blobs (int): Amount of blobs expected in image. Additional blobs will be considered reflections and discarded.
+            thresh (int, optional): Light intensity for pixel to be considered LED blob pixel, [0=LOW,255=HIGH]
         """
 
-        # Parameters
+        # Arguments
         self.side = side
         self.max_blobs = max_blobs 
         self.thresh = thresh
@@ -37,19 +41,32 @@ class Blob():
         self.no_blobs = 0
 
     def detect(self, img):
+        """Detect takes in an image and stores LED blob centroids in self.blobs.
+        
+        Args:
+            img (int): Image array from lib_camera, (U_CAM_MRES, U_CAM_NRES, 3)
+        """
+
         # Initializations
         self.blob_size = 0
         self.blobs = np.zeros((2, 1))
         self.no_blobs = 0
 
-        """Runs all subfunctions for blob detection"""
+        # Run all subfunctions for blob detection
         img_gray = self._raw_to_gray(img)
         blob_pixels = self._thresholding(img_gray)
         self._continuity(blob_pixels)
         self.reflections()
 
     def _raw_to_gray(self, img):
-        """Converts the image to grayscale"""
+        """Convert the rgb image to grayscale.
+        
+        Args:
+            img (int): Raw rgb image array, (U_CAM_MRES, U_CAM_NRES, 3)
+        
+        Returns:
+            int: Grayscale image array, (U_CAM_MRES, U_CAM_NRES)
+        """
         img_rgb = np.zeros((U_CAM_MRES, U_CAM_NRES, 3), dtype=np.uint8)
         img_rgb = np.array(img)
         img_gray = np.zeros((U_CAM_MRES, U_CAM_NRES))
@@ -58,10 +75,13 @@ class Blob():
         return img_gray
 
     def _thresholding(self, img_gray):
-        """Thresholds the gray image and returns blob pixels
-
-        Arguments:
-            img_gray {} -- grayscale image
+        """Keeps pixels with high enough light intensity to be considered LED blob pixels only.
+        
+        Args:
+            img_gray (int): Grayscale image array, (U_CAM_MRES, U_CAM_NRES)
+        
+        Returns:
+            int: Array of blob pixels
         """
         blob_pixels = np.where(img_gray > self.thresh)
         blob_pixels = np.asarray(blob_pixels)
@@ -69,12 +89,16 @@ class Blob():
         return blob_pixels
 
     def _continuity(self, blob_pixels):
-        """Clusters blob pixels and returns lists of single blob centroids
-
-        This method checks all blob pixels for continuity in x-direction. It then checks the subsets which are continous in x-direction for continuity in y-direction. It finally returns an array that contains the centroids of individual blobs.
+        """Clusters blob pixels and returns lists of individual blob centroids
         
-        Arguments:
-            blob_pixels {} -- array of pixels that belong to blobs
+        _continuity checks all blob pixels for continuity in m-direction. It then checks the subsets which are continous in m-direction for continuity in n-direction. It finally returns an array that contains the centroids of individual blobs.
+        
+        Args:
+            blob_pixels (int): Array of blob pixels
+        
+        Returns:
+            float: Array of blob centroids including reflections, (2, no_blobs)
+        
         """
 
         # Total amount of blob pixels. If none, return.
@@ -130,9 +154,9 @@ class Blob():
                 self.no_blobs += 1
 
     def reflections(self):
-        # discard blobs that are reflected on the surface, keep single lowest blob only
+        """Discards LED blob centroids that are considered reflections at the water surface. Reflections tend to appear higher up in the image than real centroids, i.e., they have lower m-coordinates. If the number of identified blobs is greater than the maximum number of expected blobs, the maximum number of expected blobs with the highest m-coodinates will be kept.
+        """
+
         if self.no_blobs > self.max_blobs:
-            #print(self.blobs)
             blob_ind = np.argsort(self.blobs[0, :])[-self.max_blobs:]
             self.blobs = self.blobs[:, blob_ind]
-            #print(self.blobs)

@@ -1,8 +1,34 @@
+"""Utils library, contains BlueBot parameters in a single place, such that all changes can be made here.
+
+Attributes:
+    U_BLOB_THRESH (int): Light intensity for pixel to be considered LED blob pixel, [0=LOW,255=HIGH]
+    U_CAM_ALPHA (float): Camera mounting angle
+    U_CAM_c (float): Camera calibration parameter
+    U_CAM_d (float): Camera calibration parameter
+    U_CAM_DX (int): Camera x-offset to center of rotation
+    U_CAM_DY (int): Camera y-offset to center of rotation
+    U_CAM_e (float): Camera calibration parameter
+    U_CAM_MRES (int): Image resolution in m-direction (vertical)
+    U_CAM_NRES (int): Image resolution in n-direction (horizontal)
+    U_CAM_ss (float): Camera calibration parameter
+    U_CAM_xc (float): Camera calibration parameter
+    U_CAM_yc (float): Camera calibration parameter
+    U_FILENAME (string): Time-stamped filename for logger files
+    U_FIN_C1 (int): Caudal pin
+    U_FIN_C2 (int): Caudal pin
+    U_FIN_D1 (int): Dorsal pin
+    U_FIN_D2 (int): Dorsal pin
+    U_FIN_PL1 (int): Pectoral left pin
+    U_FIN_PL2 (int): Pectoral left pin
+    U_FIN_PR1 (int): Pectoral right pin
+    U_FIN_PR2 (int): Pectoral right pin
+    U_LED_DX (int): LEDs x-distance (horizontal)
+    U_LED_DZ (int): LEDs z-distance (vertical)
+"""
 import time
 import numpy as np
 from math import *
 
-U_FILENAME = time.strftime("%y%m%d_%H%M%S") # date_time
 
 ###############################################################################
 # ROBOT SPECS                                                                 #
@@ -50,6 +76,9 @@ U_FILENAME = time.strftime("%y%m%d_%H%M%S") # date_time
 #  . . . . . y                                                                #
 ###############################################################################
 
+# FILENAME
+U_FILENAME = time.strftime("%y%m%d_%H%M%S") # date_time
+
 # FINS
 U_FIN_C1 = 20
 U_FIN_C2 = 21
@@ -78,8 +107,9 @@ U_CAM_DX = 25 # [mm] camera x-offset to center of rotation
 U_CAM_DY = 20 # [mm] camera y-offset to center of rotation
 
 # LEDS
-U_LED_DX = 84 # [mm] leds x-distance
-U_LED_DZ = 84 # [mm] leds z-distance
+U_LED_DX = 84 # [mm] leds x-distance on BlueBot
+#U_LED_DZ = 84 # [mm] leds z-distance on BlueBot
+U_LED_DZ = 150 # [mm] leds z-distance on orbit-beacon
 
 # BLOB
 U_BLOB_THRESH = 60 # default detection threshold

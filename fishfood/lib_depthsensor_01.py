@@ -1,14 +1,23 @@
-# Distributed with a free-will license.
-# Use it any way you want, profit or free, provided it fits in the licenses of its associated works.
-# MS5803_02BA
-# This code is designed to work with the MS5803_01BA_I2CS I2C Mini Module available from ControlEverything.com.
-# https://www.controleverything.com/content/Analog-Digital-Converters?sku=MS5803-02BA_I2CS#tabs-0-product_tabset-2
+"""Depthsensor library for MS5803_01BA model, reads depth sensor and stores value of diving depth in mm.
 
+COPY THIS LIBRARY VERSION TO BLUEBOT AND REMOVE ENDING "_01" IFF BLUEBOT HAS MS5803_01BA MODEL!
+"""
 import smbus
 import time
 
 class DepthSensor():
+
+	"""DepthSensor reads the pressure sensor and converts its value to diving depth in mm
+	
+	Attributes:
+	    depth_mm (int): Diving depth, [mm]
+	    pressure_mbar (int): Pressure, [mbar]
+	    temperature_celsius (int): Temperature, [celsius]
+	"""
+	
 	def __init__(self):
+		"""Initializes a DepthSensor object and reads the surface_pressure stored during boot-up.
+		"""
 		self.pressure_mbar = 0
 		self.temperature_celsius = 0
 		self.depth_mm = 0
@@ -63,6 +72,8 @@ class DepthSensor():
 		self.update()
 
 	def update(self):
+		"""Updates the diving depth
+		"""
 		C1 = self._C1
 		C2 = self._C2
 		C3 = self._C3
