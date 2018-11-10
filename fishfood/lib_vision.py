@@ -23,13 +23,16 @@ class Vision():
         xyz_r (float): True-distance rays from the right camera in the robot frame [mm]
     """
 
-    def __init__(self):
+    def __init__(self, max_blobs):
         """Camera and Blob are classes for image taking and processing respectively.
+        
+        Args:
+            max_blobs (int): maximum number of blobs in environemt
         """
         self._cam_r = Camera('right')
         self._cam_l = Camera('left')
-        self._blob_r = Blob('right', 1, 40)  # max_blobs, detection threshold
-        self._blob_l = Blob('left', 1, 40)  # max_blobs, detection threshold
+        self._blob_r = Blob('right', max_blobs, 40)  # detection threshold
+        self._blob_l = Blob('left', max_blobs, 40)  # detection threshold
 
         self.pqr_r = np.zeros((3, 1))
         self.pqr_l = np.zeros((3, 1))
@@ -136,7 +139,13 @@ class Vision():
         return pqr
 
     def _uvw_to_pqr_l(self, uvw):
-        """See _uvw_to_pqr_r but for left side
+        """Transforms from the camera frame to the robot frame by rotating the camera by 10deg and switching axes.
+        
+        Args:
+            uvw (float): uvw rays in the camera frame
+        
+        Returns:
+            float: pqr rays in the robot frame
         """
         rot_angle = np.array([[1, 0, 0], [
                              0, cos(-U_CAM_ALPHA), -sin(-U_CAM_ALPHA)], [0, sin(-U_CAM_ALPHA), cos(-U_CAM_ALPHA)]])
@@ -221,7 +230,13 @@ class Vision():
         return xyz
 
     def _xyz_cam_to_robot_l(self, xyz):
-        """See _xyz_cam_to_robot_r but for left side
+        """Subtracts the translational offset of the camera center from the robot center.
+        
+        Args:
+            xyz (float): xyz which are offset from the robot center by the camera distance
+        
+        Returns:
+            float: xyz which are in the robot center
         """
         trans = np.array([[U_CAM_DX], [-U_CAM_DY], [0]])
         xyz + np.tile(trans, xyz.shape[1])
