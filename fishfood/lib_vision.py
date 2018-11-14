@@ -185,7 +185,6 @@ class Vision():
             r2 = rtemp
 
         delta = U_LED_DZ
-        delta = 150  # 60
 
         a = r2**2 - r1**2
         b = 2 * delta * r1 * (r2**2 - 1)

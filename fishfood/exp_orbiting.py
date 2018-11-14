@@ -352,7 +352,7 @@ def main(max_centroids, run_time=60, target_dist=500):
             transition()
         elif status == 'orbit':
             caudal.on()
-            orbit(target_dist)    
+            orbit(target_dist)
 
         # log status and centroids
         t_passed = time.time() - t_start

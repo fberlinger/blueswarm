@@ -198,7 +198,7 @@ def home():
             caudal.off()
 
     # blob to the left
-    elif heading < 0:
+    else:
         freq_r = 5 + 5 * abs(heading) / 180
         pecto_r.set_frequency(freq_r)
 
