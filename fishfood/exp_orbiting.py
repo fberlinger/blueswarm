@@ -273,7 +273,7 @@ def orbit(target_dist):
         target_dist (int): Target orbiting radius, [mm]
     """
     try:
-        dist = np.linalg.norm(vision.xyz_r[:1, 0]) # 2D, ignoring z
+        dist = np.linalg.norm(vision.xyz_r[:2, 0]) # 2D, ignoring z
         heading = np.arctan2(vision.pqr_r[1, 0], vision.pqr_r[0, 0]) * 180 / pi
     except:
         return
