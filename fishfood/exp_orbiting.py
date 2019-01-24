@@ -337,8 +337,6 @@ def main(max_centroids, run_time=60, target_dist=500):
             caudal.off()
             pecto_r.off()
             pecto_l.off()
-            dist = 9999
-            heading = 9999
 
         # act based on status
         global status
