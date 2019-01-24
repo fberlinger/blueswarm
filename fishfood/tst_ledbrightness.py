@@ -227,11 +227,14 @@ def main(max_centroids, run_time=60):
         except:
             continue
 
-        # control depth
-        depth_ctrl_from_cam()
-
-        # move towards light
-        home()
+        right = vision.pqr_r
+        left = vision.pqr_l
+        if not right.size and not left.size:
+            print('cant see blob')
+            leds.off()
+        else:
+            leds.on()
+            print('can see blob')
 
         # log status and centroids
         t_passed = time.clock() - t_start
@@ -246,12 +249,12 @@ dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
 pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 8) # freq, [Hz]
 pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq, [Hz]
 leds = LEDS()
-vision = Vision(max_centroids)
+vision = Vision()
 depth_sensor = DepthSensor()
 
-time.sleep(10)
+time.sleep(2)
 initialize()
 leds.on()
-main(max_centroids, 180) # run time
+main(max_centroids, 60) # run time
 leds.off()
 terminate()

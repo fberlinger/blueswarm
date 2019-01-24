@@ -1,5 +1,6 @@
 """LED library, provides functions to switch BlueBot's LEDs on and off.
 """
+import threading
 import RPi.GPIO as GPIO
 
 class LEDS():

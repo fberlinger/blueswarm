@@ -102,7 +102,7 @@ U_CAM_ss = np.flip(U_CAM_ss, 0)
 U_CAM_MRES = 192 #144# U_CAM_MRES has to be multiple of 16, U_CAM_NRES of 32
 U_CAM_NRES = 256 #192# aspect ratio U_CAM_NRES / U_CAM_MRES has to be 4 / 3
 # mounting
-U_CAM_ALPHA = -10 * pi / 180 # [rad] camera mounting angle
+U_CAM_ALPHA = radians(-10) # [rad] camera mounting angle
 U_CAM_DX = 25 # [mm] camera x-offset to center of rotation
 U_CAM_DY = 20 # [mm] camera y-offset to center of rotation
 
