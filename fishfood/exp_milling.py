@@ -336,11 +336,8 @@ def main(max_centroids, run_time=60, target_dist=500):
 
         # orbit if 2 blobs are visible
         if vision.xyz_r.size:
-            dist = np.linalg.norm(vision.xyz_r[:1, 0])
+            dist = np.linalg.norm(vision.xyz_r[:2, 0])
             heading = np.arctan2(vision.pqr_r[1, 0], vision.pqr_r[0, 0]) * 180 / pi
-        elif vision.xyz_l.size:
-            dist = np.linalg.norm(vision.xyz_l[:1, 0])
-            heading = np.arctan2(vision.pqr_l[1, 0], vision.pqr_l[0, 0]) * 180 / pi
         else:
             caudal.off()
             pecto_r.off()
@@ -370,7 +367,7 @@ def main(max_centroids, run_time=60, target_dist=500):
 
 
 # homing plus orbiting, 2D or 3D
-status = 'home' # ['home', 'transition', 'orbit']
+status = 'orbit' # ['home', 'transition', 'orbit']
 depth_ctrl = True # 2D or 3D, [False, True]
 lock_depth = False # use depth sensor once at target depth, set to mm value
 
@@ -389,6 +386,6 @@ ema = EMA(0.3)
 initialize()
 idle()
 leds.on()
-main(max_centroids, 120, 400) # run time, target distance
+main(max_centroids, 60, 400) # run time, target distance
 leds.off()
 terminate()

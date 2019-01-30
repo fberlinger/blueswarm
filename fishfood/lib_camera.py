@@ -53,7 +53,7 @@ class Camera():
         """Takes an image with the selected camera (right or left) and stores it in self.img. Additionally saves the image if store_img=True.
         """
         if self.side == 'right':
-            GPIO.output(self.CAMLED, False) # set to right cam
+            GPIO.output(self.CAMLED, U_CAM_RIGHT) # set to right cam
             if self.store_img:
                 self.picam.rotation = 180
                 self.picam.capture('./{}/{}_r{}.jpg'.format(U_FILENAME, U_FILENAME, self.no_r), use_video_port=True)
@@ -61,7 +61,7 @@ class Camera():
                 self.no_r += 1
 
         elif self.side == 'left':    
-            GPIO.output(self.CAMLED, True) # set to left cam
+            GPIO.output(self.CAMLED, U_CAM_LEFT) # set to left cam
             if self.store_img:
                 self.picam.rotation = 180
                 self.picam.capture('./{}/{}_l{}.jpg'.format(U_FILENAME, U_FILENAME, self.no_l), use_video_port=True)

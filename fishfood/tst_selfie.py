@@ -22,11 +22,11 @@ def selfie():
 	GPIO.output(CAMLED, True)
 	picam.capture('{}_sl.jpg'.format(U_FILENAME))
 
-def flash_leds(time):
+def flash_leds(dur):
     """Flashes LEDs 
     """
     leds.on()
-    time.sleep(time)
+    time.sleep(dur)
     leds.off()
 
 

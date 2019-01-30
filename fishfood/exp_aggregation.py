@@ -1,26 +1,9 @@
-"""Makes BlueBot around two vertically stacked lights
-
-Contains generic vision based functions that can be used elsewhere including homing and depth control. Also contains depth control using the depth sensor and logger functions.
-
-Attributes:
-    caudal (): Fin object for caudal fin
-    depth_ctrl (bool): Depth control from camera, [y/n]
-    depth_sensor (): DepthSensor object
-    dorsal (): Fin object for dorsal fin
-    ema (): EMA filter object
-    leds (): LED object
-    lock_depth (int): Depth control from depth sensor, 0=false, int=target_depth
-    pecto_l (): Fin object for pectoral left fin
-    pecto_r (): Fin object for pectoral right fin
-    status (str): BlueBot status in finite state machine
-    vision (): Vision object
+"""Makes BlueBot aggregate.
 """
 import RPi.GPIO as GPIO
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
-import os
-import csv
 import time
 import threading
 import numpy as np
@@ -33,9 +16,7 @@ from lib_fin import Fin
 from lib_leds import LEDS
 from lib_vision import Vision
 from lib_depthsensor import DepthSensor
-from lib_ema import EMA
 
-os.makedirs('./{}/'.format(U_FILENAME))
 
 def initialize():
     """Initializes all threads which are running fins and a logger instance for the overall status
@@ -44,12 +25,6 @@ def initialize():
     threading.Thread(target=dorsal.run).start()
     threading.Thread(target=pecto_l.run).start()
     threading.Thread(target=pecto_r.run).start()
-
-    # logger instance for overall status
-    with open('./{}/{}_status.log'.format(U_FILENAME, U_FILENAME), 'w') as f:
-        f.truncate()
-        #f.write('t_passed :: t_capture::   t_blob ::    t_uvw ::    t_pqr ::    t_xyz :: distance ::    heading :: status\n')
-        f.write('t_passed :: distance ::  heading :: status\n')
 
     leds.on()
     time.sleep(1)
@@ -76,15 +51,6 @@ def terminate():
     leds.off()
 
     GPIO.cleanup()
-
-'''
-def log_status(t_passed, t_capture, t_blob, t_uvw, t_pqr, t_xyz, distance, heading, status):
-    with open('./{}/{}_status.log'.format(U_FILENAME, U_FILENAME), 'a') as f:
-        f.write(
-            '  {:6.3f} ::   {:6.3f} ::   {:6.3f} ::   {:6.3f} ::   {:6.3f} ::   {:6.3f} ::     {:4.0f} ::     {:4.0f} ::   {}\n'.format(t_passed, t_capture, t_blob, t_uvw, t_pqr, t_xyz, distance, heading, status
-                )
-            )
-'''
 
 def log_status(t_passed, distance, heading, status):
     """Logs the overall status of BlueBot
@@ -187,7 +153,18 @@ def depth_ctrl_from_depthsensor(thresh=2):
     elif depth_sensor.depth_mm < (lock_depth - thresh):
         dorsal.on()
 
-def home():
+def center():
+    right = vision.pqr_r
+    left = vision.pqr_l
+
+    # compute center
+    if right.size and left.size:
+        center = 1/(right.shape[1] + left.shape[1])) * (np.sum(right, axis=1) + np.sum(left, axis=1))
+        return center
+    else:
+        return False
+
+def home(target):
     """Controls the pectoral fins to follow an object using both cameras
 
     The "heading" angle towards an object is calculated based on (pqr) coordinates as follows: atan2(r, sqrt(q^2 + p^2)). A positive angle switches the pectoral left fin on turn clockwise. A negative angles switches the pectoral right fin on to turn counterclockwise.
@@ -195,13 +172,10 @@ def home():
     Returns:
         (): Floats to the surface and turns on the spot if no object observed
     """
-    caudal_range = 20 # abs(heading) below which caudal fin is swithed on
-
-    right = vision.pqr_r
-    left = vision.pqr_l
+    caudal_range = 20 # abs(heading) below which caudal fin is switched on
 
     # blob behind or lost
-    if not right.size and not left.size:
+    if not target:
         #print('cant see blob')
         pecto_r.set_frequency(6)
         pecto_r.on()
@@ -209,20 +183,10 @@ def home():
         caudal.off()
         return
 
-    # calculate headings
-    if not right.size:
-        heading_l = np.arctan2(left[1, 0], left[0, 0]) * 180 / pi
-        heading_r = heading_l
-    elif not left.size:
-        heading_r = np.arctan2(right[1, 0], right[0, 0]) * 180 / pi
-        heading_l = heading_r
-    else:
-        heading_r = np.arctan2(right[1, 0], right[0, 0]) * 180 / pi
-        heading_l = np.arctan2(left[1, 0], left[0, 0]) * 180 / pi
+    # calculate heading
+    heading = np.arctan2(target[1], target[0]) * 180 / pi
 
-    heading = (heading_r + heading_l) / 2
-
-    # blob to the right
+    # target to the right
     if heading > 0:
         freq_l = 5 + 5 * abs(heading) / 180
         pecto_l.set_frequency(freq_l)
@@ -236,7 +200,7 @@ def home():
         else:
             caudal.off()
 
-    # blob to the left
+    # target to the left
     elif heading < 0:
         freq_r = 5 + 5 * abs(heading) / 180
         pecto_r.set_frequency(freq_r)
@@ -250,76 +214,7 @@ def home():
         else:
             caudal.off()
 
-def transition():
-    """Transitions between homing and orbiting. Uses pectoral right fin to align tangentially with the orbit.
-    """
-    caudal.off()
-    pecto_l.off()
-    pecto_r.set_frequency(8)
-    pecto_r.on()
-
-    right = vision.pqr_r
-
-    try:
-        heading = np.arctan2(right[1, 0], right[0, 0]) * 180 / pi
-    except:
-        return
-
-    if heading > 45:
-        pecto_r.off()
-        global status
-        status = 'orbit'
-
-def orbit(target_dist):
-    """Orbits an object, e.g. two vertically stacked LEDs, at a predefined radius
-
-    Uses four zones to control the orbit with pectoral and caudal fins. The problem is reduced to 2D and depth control is handled separately.
-
-    Could make fin frequencies dependent on distance and heading, i.e., use proportianl control.
-    
-    Args:
-        target_dist (int): Target orbiting radius, [mm]
-    """
-
-    try:
-        dist = np.linalg.norm(vision.xyz_r[:2, 0]) # 2D, ignoring z
-        heading = np.arctan2(vision.pqr_r[1, 0], vision.pqr_r[0, 0]) * 180 / pi
-    except:
-        return
-
-    if dist > target_dist:
-        if heading < 90:
-            print('fwd, caudal')
-            #caudal.on()
-            pecto_r.off()
-            pecto_l.off()
-        else:
-            print('cw, pl')
-            #caudal.off()
-            pecto_l.set_frequency(8)
-            #pecto_l.on()
-            pecto_r.off()
-    else:
-        if heading < 90:
-            print('ccw, caudal and pr')
-            #caudal.on()
-            pecto_r.set_frequency(8)
-            #pecto_r.on()
-            pecto_l.off()
-        else:
-            print('fwd, caudal')
-            #caudal.on()
-            pecto_r.off()
-            pecto_l.off()
-
-def main(max_centroids, run_time=60, target_dist=500):
-    """Runs vision update, depth control, status-based action, and logging iteratively
-    
-    Args:
-        max_centroids (int): Maximum expected centroids in environment
-        run_time (int, optional): Experiment time [s]
-        target_dist (int, optional): Orbit radius, [mm]
-    """
+def main(max_centroids, run_time=60):
     t_start = time.time()
     
     while time.time() - t_start < run_time:
@@ -329,51 +224,12 @@ def main(max_centroids, run_time=60, target_dist=500):
         except:
             continue
 
-        # control depth
-        if depth_ctrl:
-            depth_ctrl_from_cam()
-        elif lock_depth:
-            depth_ctrl_from_depthsensor()
+        target = center()
 
-        # orbit if 2 blobs are visible
-        if vision.xyz_r.size:
-            dist = np.linalg.norm(vision.xyz_r[:2, 0])
-            heading = np.arctan2(vision.pqr_r[1, 0], vision.pqr_r[0, 0]) * 180 / pi
-        else:
-            caudal.off()
-            pecto_r.off()
-            pecto_l.off()
-            dist = target_dist + 1
-            heading = target_dist + 1
-
-        print(dist)
-
-        # act based on status
-        global status
-        if status == 'home':
-            dist_filtered = ema.update_ema(dist)
-            if dist_filtered < target_dist * 1.6:
-                status = 'transition'
-            else:
-                home()
-        elif status == 'transition':
-            transition()
-        elif status == 'orbit':
-            orbit(target_dist)
-
-        # log status and centroids
-        t_passed = time.time() - t_start
-        log_status(t_passed, dist, heading, status)
-        log_centroids(round(t_passed, 3), 'right', max_centroids)
-        log_centroids(round(t_passed, 3), 'left', max_centroids)
+        home(target)
 
 
-# homing plus orbiting, 2D or 3D
-status = 'orbit' # ['home', 'transition', 'orbit']
-depth_ctrl = False # 2D or 3D, [False, True]
-lock_depth = False # use depth sensor once at target depth, set to mm value
-
-max_centroids = 2 # maximum expected centroids in environment
+max_centroids = 6 # maximum expected centroids in environment
 
 caudal = Fin(U_FIN_C1, U_FIN_C2, 1.5) # freq, [Hz]
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
@@ -383,11 +239,10 @@ photodiode = Photodiode()
 leds = LEDS()
 vision = Vision(max_centroids)
 depth_sensor = DepthSensor()
-ema = EMA(0.3)
 
 initialize()
 idle()
 leds.on()
-main(max_centroids, 30, 250) # run time, target distance
+main(max_centroids, 30) # run time
 leds.off()
 terminate()

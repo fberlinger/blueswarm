@@ -90,6 +90,9 @@ U_FIN_PL1 = 18
 U_FIN_PL2 = 23
 
 # CAMERA
+# camera side
+U_CAM_RIGHT = True # False for BB01
+U_CAM_LEFT = False # True for BB01
 # calibration parameters
 U_CAM_xc = 9.890661037168528e+02
 U_CAM_yc = 1.240887736413883e+03
