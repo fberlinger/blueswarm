@@ -4,6 +4,7 @@ import RPi.GPIO as GPIO
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
+import os
 import numpy as np
 import time
 import math
@@ -12,6 +13,8 @@ import threading
 from lib_utils import *
 from lib_leds import LEDS
 from lib_camera import Camera
+
+os.makedirs('./{}/'.format(U_FILENAME))
 
 class Sync():
 
@@ -41,15 +44,20 @@ class Sync():
         self.last_flash = 0
         self.clockspeed = 0.05
 
-        self.flash_period = 10
-        self.flash_dur = 1
-        self.obs_dur = 0.35
+        self.flash_period = 12
+        self.flash_dur = 1.2
+        self.obs_dur = 0.55
         self.refractory = math.ceil(self.flash_dur / self.obs_dur)
 
         self._leds = LEDS()
         self._cam_r = Camera('right')
         self._cam_l = Camera('left')
 
+    def log_flash(self):
+        """Logs the flashing times
+        """
+        with open('./{}/{}_flashtimes.log'.format(U_FILENAME, U_FILENAME), 'a') as f:
+            f.write('{}\n'.format(self.last_flash))
 
     def update(self, run_time):
         """Runs observation if not in refractory period and updates timestamp if flashing is observed.
@@ -97,6 +105,7 @@ class Sync():
         """Proceeds timestamp within a flashing period. Resets timestamp and causes LEDs to flash (fires!) at the end of each flashing period. Runs on a separate thread.
         """
         self.last_flash = time.time()
+        self.log_flash()
         t_start_loop = time.time()
         last_update = time.time()
         
@@ -106,6 +115,7 @@ class Sync():
                 self.flash_led = True
                 self.timestamp = 0
                 self.last_flash = time.time()
+                self.log_flash()
             else:
                 now = time.time()
                 dt = now - last_update

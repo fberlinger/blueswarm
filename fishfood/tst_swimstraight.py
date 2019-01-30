@@ -10,7 +10,7 @@ import RPi.GPIO as GPIO
 
 from lib_fin import Fin
 
-caudal = Fin(U_FIN_C1, U_FIN_C2, 5) # freq
+caudal = Fin(U_FIN_C1, U_FIN_C2, 4) # freq
 
 threading.Thread(target=caudal.run).start()
 

@@ -107,9 +107,9 @@ U_CAM_DX = 25 # [mm] camera x-offset to center of rotation
 U_CAM_DY = 20 # [mm] camera y-offset to center of rotation
 
 # LEDS
-U_LED_DX = 84 # [mm] leds x-distance on BlueBot
-#U_LED_DZ = 84 # [mm] leds z-distance on BlueBot
-U_LED_DZ = 150 # [mm] leds z-distance on orbit-beacon
+U_LED_DX = 86 # [mm] leds x-distance on BlueBot
+U_LED_DZ = 86 # [mm] leds z-distance on BlueBot
+#U_LED_DZ = 150 # [mm] leds z-distance on orbit-beacon
 
 # BLOB
 U_BLOB_THRESH = 60 # default detection threshold
