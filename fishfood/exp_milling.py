@@ -32,7 +32,7 @@ from lib_photodiode import Photodiode
 from lib_fin import Fin
 from lib_leds import LEDS
 from lib_vision import Vision
-from lib_depthsensor import DepthSensor
+#from lib_depthsensor import DepthSensor
 from lib_ema import EMA
 
 os.makedirs('./{}/'.format(U_FILENAME))
@@ -167,12 +167,12 @@ def depth_ctrl_from_cam():
         dorsal.off()
 
     # pressure sensor takeover. is not distance invariant, so start only when orbiting at fixed distance
-    if status == 'orbit' and abs(pitch) < pitch_range:
-        depth_sensor.update()
-        global lock_depth
-        lock_depth = depth_sensor.depth_mm # i.e., lock_depth not false anymore
-        global depth_ctrl
-        depth_ctrl = False
+    #if status == 'orbit' and abs(pitch) < pitch_range:
+    #    depth_sensor.update()
+    #    global lock_depth
+    #    lock_depth = depth_sensor.depth_mm # i.e., lock_depth not false anymore
+    #    global depth_ctrl
+    #    depth_ctrl = False
 
 def depth_ctrl_from_depthsensor(thresh=2):
     """Controls the diving depth to a preset level
@@ -380,12 +380,10 @@ pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq, [Hz]
 photodiode = Photodiode()
 leds = LEDS()
 vision = Vision(max_centroids)
-depth_sensor = DepthSensor()
+#depth_sensor = DepthSensor()
 ema = EMA(0.3)
 
 initialize()
 idle()
-leds.on()
-main(max_centroids, 60, 400) # run time, target distance
-leds.off()
+main(max_centroids, 90, 350) # run time, target distance
 terminate()

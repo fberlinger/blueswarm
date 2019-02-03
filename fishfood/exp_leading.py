@@ -17,8 +17,8 @@ import RPi.GPIO as GPIO
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
-import os
-import csv
+#import os
+#import csv
 import time
 import threading
 import numpy as np
@@ -30,10 +30,11 @@ from lib_utils import *
 from lib_fin import Fin
 from lib_leds import LEDS
 from lib_vision import Vision
+from lib_photodiode import Photodiode
 from lib_depthsensor import DepthSensor
 from lib_ema import EMA
 
-os.makedirs('./{}/'.format(U_FILENAME))
+#os.makedirs('./{}/'.format(U_FILENAME))
 
 def initialize():
     """Initializes all threads which are running fins and a logger instance for the overall status
@@ -44,15 +45,22 @@ def initialize():
     threading.Thread(target=pecto_r.run).start()
 
     # logger instance for overall status
-    with open('./{}/{}_status.log'.format(U_FILENAME, U_FILENAME), 'w') as f:
-        f.truncate()
+    #with open('./{}/{}_status.log'.format(U_FILENAME, U_FILENAME), 'w') as f:
+    #    f.truncate()
         #f.write('t_passed :: t_capture::   t_blob ::    t_uvw ::    t_pqr ::    t_xyz :: distance ::    heading :: status\n')
-        f.write('t_passed :: distance ::  heading :: status\n')
+    #    f.write('t_passed :: distance ::  heading :: status\n')
 
     leds.on()
     time.sleep(1)
     leds.off()
-    time.sleep(1)
+
+def idle():
+    """Waiting for starting signal
+    """
+    thresh_photodiode = 50 # lights off: 2, lights on: 400 -> better range!
+
+    while photodiode.brightness > thresh_photodiode:
+        photodiode.update()
 
 def terminate():
     """Terminates all threads which are running fins
@@ -76,7 +84,7 @@ def log_status(t_passed, t_capture, t_blob, t_uvw, t_pqr, t_xyz, distance, headi
                 )
             )
 '''
-
+'''
 def log_status(t_passed, distance, heading, status):
     """Logs the overall status of BlueBot
     
@@ -119,7 +127,7 @@ def log_centroids(t_passed, side, max_centroids):
         for i in range(max_centroids):
             row.append(centroid_list[0, i])
         writer.writerow(row)
-
+'''
 def depth_ctrl_from_depthsensor(target_depth=400, thresh=2):
     """Controls the diving depth to a preset level
     
@@ -134,7 +142,9 @@ def depth_ctrl_from_depthsensor(target_depth=400, thresh=2):
     elif depth_sensor.depth_mm < (target_depth - thresh):
         dorsal.on()
 
-def move(self):
+state_switch = 1
+state_dir =  0
+def move():
     """Conscious random walk. Wait, whenever follower is too far away. Otherwise, go forward, up/down, and turn left/right with respective probabilities.
     """
     target_depth = 600
@@ -142,12 +152,17 @@ def move(self):
     global state_switch # [0, 1] = [spin, forward]
     global state_dir # [0, 1] = [clockwise, counterclockwise]
 
-    prob_switch = 0.2
-    prob_dir = 0.5
-    prob_depth = 0.05
+    prob_turn = 0.1
+    prob_fwd = 0.4
+    prob_dir = 0.4
+    prob_depth = 0.2
 
-    if random.random() <= prob_switch:
-        state_switch = 1 - state_switch
+    if state_switch == 1:
+        if random.random() <= prob_turn:
+            state_switch = 1 - state_switch
+    else:
+        if random.random() <= prob_fwd:
+            state_switch = 1 - state_switch
 
     if state_switch == 0:
         caudal.off()
@@ -169,13 +184,13 @@ def move(self):
         target_depth = np.clip(target_depth, 100, 1200)
     depth_ctrl_from_depthsensor(target_depth)
 
-def wait(self):
+def wait():
     """Spin in circle and wait to see follower again
     """
     caudal.off()
-    pecto_r.off()
+    pecto_r.on()
     pecto_l.on()
-    depth_ctrl_from_depthsensor(600)
+    depth_ctrl_from_depthsensor(300)
 
 def main(max_centroids, run_time=60, target_dist=500):
     """Runs vision update, depth control, status-based action, and logging iteratively
@@ -212,25 +227,27 @@ def main(max_centroids, run_time=60, target_dist=500):
 
         # log status and centroids
         t_passed = time.time() - t_start
-        log_status(t_passed, dist, heading, status)
-        log_centroids(round(t_passed, 3), 'right', max_centroids)
-        log_centroids(round(t_passed, 3), 'left', max_centroids)
+        #log_status(t_passed, dist, heading, status)
+        #log_centroids(round(t_passed, 3), 'right', max_centroids)
+        #log_centroids(round(t_passed, 3), 'left', max_centroids)
 
 
 max_centroids = 2 # maximum expected centroids in environment
 
-caudal = Fin(U_FIN_C1, U_FIN_C2, 2.0) # freq, [Hz]
+caudal = Fin(U_FIN_C1, U_FIN_C2, 2.2) # freq, [Hz]
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
 pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 8) # freq, [Hz]
 pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq, [Hz]
 leds = LEDS()
 vision = Vision(max_centroids)
 depth_sensor = DepthSensor()
+photodiode = Photodiode()
 ema = EMA(0.3)
 
-time.sleep(12)
 initialize()
+idle()
+time.sleep(1)
 leds.on()
-main(max_centroids, 120, 500) # run time, target distance
+main(max_centroids, 180, 910) # run time, target distance
 leds.off()
 terminate()

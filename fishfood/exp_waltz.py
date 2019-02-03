@@ -32,7 +32,7 @@ from lib_photodiode import Photodiode
 from lib_fin import Fin
 from lib_leds import LEDS
 from lib_vision import Vision
-from lib_depthsensor import DepthSensor
+#from lib_depthsensor import DepthSensor
 from lib_ema import EMA
 
 os.makedirs('./{}/'.format(U_FILENAME))
@@ -51,14 +51,14 @@ def initialize():
         #f.write('t_passed :: t_capture::   t_blob ::    t_uvw ::    t_pqr ::    t_xyz :: distance ::    heading :: status\n')
         f.write('t_passed :: distance ::  heading :: status\n')
 
-    leds.on()
-    time.sleep(1)
-    leds.off()
+    #leds.on()
+    #time.sleep(1)
+    #leds.off()
 
 def idle():
     """Waiting for starting signal
     """
-    thresh_photodiode = 50 # lights off: 2, lights on: 400 -> better range!
+    thresh_photodiode = 20 # lights off: 2, lights on: 400 -> better range!
 
     while photodiode.brightness > thresh_photodiode:
         photodiode.update()
@@ -289,26 +289,26 @@ def orbit(target_dist):
 
     if dist > target_dist:
         if heading < 90:
-            print('fwd, caudal')
-            #caudal.on()
+            #print('fwd, caudal')
+            caudal.set_frequency(1.4)
             pecto_r.off()
             pecto_l.off()
         else:
-            print('cw, pl')
-            #caudal.off()
+            #print('cw, pl')
+            caudal.set_frequency(1)
             pecto_l.set_frequency(8)
-            #pecto_l.on()
+            pecto_l.on()
             pecto_r.off()
     else:
         if heading < 90:
-            print('ccw, caudal and pr')
-            #caudal.on()
+            #print('ccw, caudal and pr')
+            caudal.set_frequency(1.4)
             pecto_r.set_frequency(8)
-            #pecto_r.on()
+            pecto_r.on()
             pecto_l.off()
         else:
-            print('fwd, caudal')
-            #caudal.on()
+            #print('fwd, caudal')
+            caudal.set_frequency(1.4)
             pecto_r.off()
             pecto_l.off()
 
@@ -359,6 +359,7 @@ def main(max_centroids, run_time=60, target_dist=500):
         elif status == 'transition':
             transition()
         elif status == 'orbit':
+            caudal.on()
             orbit(target_dist)
 
         # log status and centroids
@@ -375,19 +376,20 @@ lock_depth = False # use depth sensor once at target depth, set to mm value
 
 max_centroids = 2 # maximum expected centroids in environment
 
-caudal = Fin(U_FIN_C1, U_FIN_C2, 1.5) # freq, [Hz]
+caudal = Fin(U_FIN_C1, U_FIN_C2, 1) # freq, [Hz]
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
 pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 8) # freq, [Hz]
 pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq, [Hz]
 photodiode = Photodiode()
 leds = LEDS()
 vision = Vision(max_centroids)
-depth_sensor = DepthSensor()
+#depth_sensor = DepthSensor()
 ema = EMA(0.3)
 
 initialize()
 idle()
+time.sleep(2)
 leds.on()
-main(max_centroids, 30, 250) # run time, target distance
+main(max_centroids, 80, 240) # run time, target distance
 leds.off()
 terminate()

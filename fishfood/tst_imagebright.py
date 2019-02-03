@@ -1,3 +1,10 @@
+"""Take an image and average all pixel values to find brightness. Used for sync and swim.
+
+Attributes:
+    cam_l (TYPE): Description
+    cam_r (TYPE): Description
+    dur (TYPE): Description
+"""
 import RPi.GPIO as GPIO
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
@@ -28,8 +35,6 @@ def observe():
     return flash
 
 
-
-
 cam_r = Camera('right')
 cam_l = Camera('left')
 
@@ -42,5 +47,3 @@ for i in range(100):
 
 print(np.mean(dur))
 print(np.max(dur))
-
-

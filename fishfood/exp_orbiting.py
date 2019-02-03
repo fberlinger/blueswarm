@@ -58,7 +58,7 @@ def initialize():
 def idle():
     """Waiting for starting signal
     """
-    thresh_photodiode = 50 # lights off: 2, lights on: 400 -> better range!
+    thresh_photodiode = 20 # lights off: 2, lights on: 400 -> better range!
 
     while photodiode.brightness > thresh_photodiode:
         photodiode.update()

@@ -1,4 +1,18 @@
-"""Makes BlueBot aggregate.
+"""Makes BlueBots aggregate.
+
+Center calculates average direction from all incoming LED rays. Returning a negative center would result in dispersion.
+
+Home moves toward center as in luring.
+
+Attributes:
+    caudal (TYPE): Description
+    dorsal (TYPE): Description
+    leds (TYPE): Description
+    max_centroids (int): Description
+    pecto_l (TYPE): Description
+    pecto_r (TYPE): Description
+    photodiode (TYPE): Description
+    vision (TYPE): Description
 """
 import RPi.GPIO as GPIO
 GPIO.setwarnings(False)
@@ -15,7 +29,7 @@ from lib_photodiode import Photodiode
 from lib_fin import Fin
 from lib_leds import LEDS
 from lib_vision import Vision
-from lib_depthsensor import DepthSensor
+#from lib_depthsensor import DepthSensor
 
 
 def initialize():
@@ -37,6 +51,8 @@ def idle():
 
     while photodiode.brightness > thresh_photodiode:
         photodiode.update()
+
+    time.sleep(1)
 
 def terminate():
     """Terminates all threads which are running fins
@@ -73,6 +89,7 @@ def log_centroids(t_passed, side, max_centroids):
     Args:
         t_passed (float): Time since the beginning of the experiment, [s]
         side (string): Right or left robot side
+        max_centroids (TYPE): Description
     """
     if (side == 'right'):
         centroids = vision.xyz_r
@@ -94,36 +111,20 @@ def log_centroids(t_passed, side, max_centroids):
             row.append(centroid_list[0, i])
         writer.writerow(row)
 
-def depth_ctrl_from_cam():
+def depth_ctrl_from_cam(target):
     """Controls the diving depth to stay level with an observed object using both cameras. Swithes to depth sensor based depth control when on level with object.
-
+    
     The "pitch" angle towards an object is calculated based on (pqr) coordinates as follows: atan2(r, sqrt(p^2 + q^2)). A positive angle switches the dorsal fin on to move down. A negative angles switches the dorsal fin off to move up.
     
-    Returns:
+    Args:
+        target (TYPE): Description
+    
+    No Longer Returned:
         (): Floats to the surface if no object observed
     """
     pitch_range = 1 # abs(pitch) below which dorsal fin is not controlled 
 
-    right = vision.pqr_r
-    left = vision.pqr_l
-
-    if not right.size and not left.size:
-        print('cant see blob')
-        dorsal.off()
-        return
-
-    if not right.size:
-        pitch_l = np.arctan2(left[2, 0], sqrt(left[0, 0]**2 + left[1, 0]**2)) * 180 / pi
-        pitch_r = pitch_l
-    elif not left.size:
-        pitch_r = np.arctan2(right[2, 0], sqrt(right[0, 0]**2 + right[1, 0]**2)) * 180 / pi
-        pitch_l = pitch_r
-    else:
-        pitch_r = np.arctan2(right[2, 0], sqrt(right[0, 0]**2 + right[1, 0]**2)) * 180 / pi
-        pitch_l = np.arctan2(left[2, 0], sqrt(left[0, 0]**2 + left[1, 0]**2)) * 180 / pi
-
-    pitch = (pitch_r + pitch_l) / 2
-    print(pitch)
+    pitch = np.arctan2(target[2], sqrt(target[0]**2 + target[1]**2)) * 180 / pi
 
     if pitch > pitch_range:
         print('move down')
@@ -131,14 +132,6 @@ def depth_ctrl_from_cam():
     elif pitch < -pitch_range:
         print('move up')
         dorsal.off()
-
-    # pressure sensor takeover. is not distance invariant, so start only when orbiting at fixed distance
-    if status == 'orbit' and abs(pitch) < pitch_range:
-        depth_sensor.update()
-        global lock_depth
-        lock_depth = depth_sensor.depth_mm # i.e., lock_depth not false anymore
-        global depth_ctrl
-        depth_ctrl = False
 
 def depth_ctrl_from_depthsensor(thresh=2):
     """Controls the diving depth to a preset level
@@ -154,28 +147,42 @@ def depth_ctrl_from_depthsensor(thresh=2):
         dorsal.on()
 
 def center():
+    """Summary
+    
+    Returns:
+        TYPE: Description
+    """
     right = vision.pqr_r
     left = vision.pqr_l
 
     # compute center
     if right.size and left.size:
-        center = 1/(right.shape[1] + left.shape[1])) * (np.sum(right, axis=1) + np.sum(left, axis=1))
+        center = 1/(right.shape[1] + left.shape[1]) * (np.sum(right, axis=1) + np.sum(left, axis=1))
+        return center
+    elif right.size:
+        center = 1/right.shape[1] * np.sum(right, axis=1)
+        return center
+    elif left.size:
+        center = 1/left.shape[1] * np.sum(left, axis=1)
         return center
     else:
-        return False
+        return np.zeros(0)
 
 def home(target):
     """Controls the pectoral fins to follow an object using both cameras
-
+    
     The "heading" angle towards an object is calculated based on (pqr) coordinates as follows: atan2(r, sqrt(q^2 + p^2)). A positive angle switches the pectoral left fin on turn clockwise. A negative angles switches the pectoral right fin on to turn counterclockwise.
     
     Returns:
         (): Floats to the surface and turns on the spot if no object observed
+    
+    Args:
+        target (TYPE): Description
     """
     caudal_range = 20 # abs(heading) below which caudal fin is switched on
 
     # blob behind or lost
-    if not target:
+    if not target.size:
         #print('cant see blob')
         pecto_r.set_frequency(6)
         pecto_r.on()
@@ -215,6 +222,12 @@ def home(target):
             caudal.off()
 
 def main(max_centroids, run_time=60):
+    """Summary
+    
+    Args:
+        max_centroids (TYPE): Description
+        run_time (int, optional): Description
+    """
     t_start = time.time()
     
     while time.time() - t_start < run_time:
@@ -226,23 +239,26 @@ def main(max_centroids, run_time=60):
 
         target = center()
 
+        #depth_ctrl_from_depthsensor(200)
+        depth_ctrl_from_cam(target)
+
         home(target)
 
 
-max_centroids = 6 # maximum expected centroids in environment
+max_centroids = 4 # maximum expected centroids in environment
 
-caudal = Fin(U_FIN_C1, U_FIN_C2, 1.5) # freq, [Hz]
+caudal = Fin(U_FIN_C1, U_FIN_C2, 3) # freq, [Hz]
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
 pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 8) # freq, [Hz]
 pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq, [Hz]
 photodiode = Photodiode()
 leds = LEDS()
 vision = Vision(max_centroids)
-depth_sensor = DepthSensor()
+#depth_sensor = DepthSensor()
 
 initialize()
 idle()
 leds.on()
-main(max_centroids, 30) # run time
+main(max_centroids, 40) # run time
 leds.off()
 terminate()
