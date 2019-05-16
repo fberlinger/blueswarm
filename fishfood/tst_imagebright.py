@@ -22,11 +22,11 @@ def observe():
     thresh_flash = 100
 
     cam_r.capture()
-    avg_bright_r = np.sum(cam_r.img)
+    avg_bright_r = np.mean(cam_r.img)
     print('avg_bright_r = {}'.format(avg_bright_r))
 
     cam_l.capture()
-    avg_bright_l = np.sum(cam_l.img)
+    avg_bright_l = np.mean(cam_l.img)
     print('avg_bright_l = {}'.format(avg_bright_l))
 
     if avg_bright_r > thresh_flash or avg_bright_l > thresh_flash:
