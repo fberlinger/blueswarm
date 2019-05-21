@@ -140,10 +140,12 @@ def lj_force(neighbors, rel_pos):
     if not neighbors:
         return center
 
-    a = 12 # 12
-    b = 6 # 6
-    epsilon = 10 # depth of potential well, V_LJ(r_target) = epsilon
-    gamma = 1 # force gain
+    # (a=12,b=6) is standard and ratio has to be 2:1, lower numbers for less aggressive repulsion, e.g. (a=6,b=3)
+    a = 12
+    b = 6
+    # epsilon and gamma are only scaling factors and without effect after normalization
+    epsilon = 100 # depth of potential well, V_LJ(r_target) = epsilon
+    gamma = 100 # force gain
     r_target = target_dist
     r_const = r_target + 130
 
@@ -238,11 +240,11 @@ def main(run_time=60):
         target = lj_force(neighbors, rel_pos)
         # move
         home(target)
-        depth_ctrl_from_cam(target)
+        #depth_ctrl_from_cam(target)
 
 
 max_centroids = 14 # 7 robots, excess centroids are reflections
-target_dist = 400 # distance to neighbors, [mm]
+target_dist = 260 # distance to neighbors, [mm]
 
 caudal = Fin(U_FIN_C1, U_FIN_C2, 3) # freq, [Hz]
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
