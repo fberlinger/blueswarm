@@ -4,6 +4,7 @@ import RPi.GPIO as GPIO
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
+import os
 import time
 import threading
 import numpy as np
@@ -11,10 +12,13 @@ from picamera import PiCamera
 
 from lib_utils import *
 from lib_photodiode import Photodiode
+from lib_depthsensor import DepthSensor
 from lib_fin import Fin
 from lib_leds import LEDS
 from lib_vision import Vision
 
+os.makedirs('./{}/'.format(U_FILENAME))
+#os.makedirs('./{}/'.format('exp_5'))
 
 def initialize():
     """Initializes all threads which are running fins and a logger instance for the overall status
@@ -24,12 +28,17 @@ def initialize():
     threading.Thread(target=pecto_l.run).start()
     threading.Thread(target=pecto_r.run).start()
 
+    # logger instance for overall status
+    with open('./{}/{}_status.log'.format(U_FILENAME, U_FILENAME), 'w') as f:
+        f.truncate()
+        f.write('t_passed ::     depth_mm ::  target_dist ::     target_x ::     target_y ::     target_z :: no_neighbors\n') # 13 long
+
     leds.on()
     time.sleep(1)
     leds.off()
 
 def idle():
-    """Waiting for starting signal
+    """Waiting for starting signal, then signal UUID
     """
     thresh_photodiode = 50 # lights off: 2, lights on: 400 -> better range!
 
@@ -37,7 +46,18 @@ def idle():
         photodiode.update()
         time.sleep(0.1)
 
-    time.sleep(4) # wait such that all robots leave idle before LEDs are on
+    t_start = time.time()
+    time.sleep(6)
+    for blink in range(U_UUID):
+        leds.on()
+        time.sleep(0.2)
+        leds.off()
+        time.sleep(0.2)
+    elapsed_time = time.time() - t_start
+    sleep_time = 12 - elapsed_time
+    time.sleep(sleep_time) # wait such that all robots leave idle before LEDs are on
+
+    return t_start
 
 def terminate():
     """Terminates all threads which are running fins
@@ -52,6 +72,18 @@ def terminate():
     leds.off()
 
     GPIO.cleanup()
+
+def log_status(t_passed, depth_mm, target_dist, target_x, target_y, target_z, no_neighbors):
+    """Logs the overall status of BlueBot
+    
+    Args:
+        t_passed (float): Time since the beginning of the experiment, [s]
+        distance (float): Distance to LED pair, [mm]
+        heading (float): x-position of an LED pair, [mm]
+        status (string): Status in the finite state machine
+    """
+    with open('./{}/{}_status.log'.format(U_FILENAME, U_FILENAME), 'a') as f:
+        f.write('{:8.1f} :: {:12.0f} :: {:12.0f} :: {:12.0f} :: {:12.0f} :: {:12.0f} :: {:12.0f}\n'.format(t_passed, depth_mm, target_dist, target_x, target_y, target_z, no_neighbors))
 
 def avoid_duplicates_by_angle():
     """Use right and left cameras just up to the xz-plane such that the overlapping camera range disappears and there are no duplicates.
@@ -141,13 +173,13 @@ def lj_force(neighbors, rel_pos):
         return center
 
     # (a=12,b=6) is standard and ratio has to be 2:1, lower numbers for less aggressive repulsion, e.g. (a=6,b=3)
-    a = 12
-    b = 6
+    a = 6
+    b = 3
     # epsilon and gamma are only scaling factors and without effect after normalization
-    epsilon = 100 # depth of potential well, V_LJ(r_target) = epsilon
-    gamma = 100 # force gain
+    epsilon = 1 # depth of potential well, V_LJ(r_target) = epsilon
+    gamma = 1 # force gain
     r_target = target_dist
-    r_const = r_target + 130
+    r_const = r_target + 1*130 #xx
 
     for neighbor in neighbors:
         r = np.clip(np.linalg.norm(rel_pos[neighbor]), 0.001, r_const)
@@ -166,12 +198,13 @@ def home(target):
     Returns:
         (): Floats to the surface and turns on the spot if no object observed
     """
-    caudal_range = 20 # abs(heading) below which caudal fin is switched on
+    caudal_range = 40 # 20 abs(heading) below which caudal fin is switched on
 
     # blob behind or lost
     if not target.size:
-        pecto_r.set_frequency(6)
-        pecto_r.on()
+        #pecto_r.set_frequency(6)
+        #pecto_r.on()
+        pecto_r.off()
         pecto_l.off()
         caudal.off()
         return
@@ -213,7 +246,7 @@ def depth_ctrl_from_cam(target):
     Returns:
         (): Floats to the surface if no object observed
     """
-    pitch_range = 1 # abs(pitch) below which dorsal fin is not controlled 
+    pitch_range = 10 # abs(pitch) below which dorsal fin is not controlled 
 
     pitch = np.arctan2(target[2], sqrt(target[0]**2 + target[1]**2)) * 180 / pi
 
@@ -224,9 +257,11 @@ def depth_ctrl_from_cam(target):
 
 
 def main(run_time=60):
-    t_start = time.time()
+    t_passed = 0
+    iteration = 0
+    t_change = time.time() - t_start
     
-    while time.time() - t_start < run_time:
+    while t_passed < run_time:
         # check environment and find blob centroids of leds
         try:
             vision.update()
@@ -240,11 +275,34 @@ def main(run_time=60):
         target = lj_force(neighbors, rel_pos)
         # move
         home(target)
-        #depth_ctrl_from_cam(target)
+        depth_ctrl_from_cam(target)
+
+        # switch behavior
+        if t_passed - t_change > run_time / 4:
+            leds.off()
+            global target_dist
+            if target_dist == 4*130:
+                target_dist = 1.5*130
+            else:
+                target_dist = 4*130
+            t_change = time.time() - t_start
+            time.sleep(1.5)
+            leds.on()
+
+        # update counters
+        t_passed = time.time() - t_start
+        iteration += 1
+
+        # log status
+        if iteration % 2 == 0: 
+            depth_sensor.update()
+            depth_mm = max(0, (depth_sensor.pressure_mbar - surface_pressure) * 10.197162129779)
+            log_status(t_passed, depth_mm, target_dist, target[0], target[1], target[2], len(neighbors))
 
 
-max_centroids = 14 # 7 robots, excess centroids are reflections
-target_dist = 260 # distance to neighbors, [mm]
+max_centroids = 12 # (robots-1)*2, excess centroids are reflections
+global target_dist
+target_dist = 4*130 # distance to neighbors, [mm]
 
 caudal = Fin(U_FIN_C1, U_FIN_C2, 3) # freq, [Hz]
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
@@ -253,10 +311,14 @@ pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq, [Hz]
 photodiode = Photodiode()
 leds = LEDS()
 vision = Vision(max_centroids)
+depth_sensor = DepthSensor()
+
+depth_sensor.update()
+surface_pressure = depth_sensor.pressure_mbar
 
 initialize()
-idle()
+t_start = idle()
 leds.on()
-main(20) # run time, [s]
+main(120) # run time, [s]
 leds.off()
 terminate()
