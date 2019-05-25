@@ -9,5 +9,5 @@ from lib_leds import LEDS
 leds = LEDS()
 
 leds.on()
-time.sleep(40)
+time.sleep(60)
 leds.off()

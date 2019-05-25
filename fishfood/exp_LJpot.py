@@ -18,7 +18,6 @@ from lib_leds import LEDS
 from lib_vision import Vision
 
 os.makedirs('./{}/'.format(U_FILENAME))
-#os.makedirs('./{}/'.format('exp_5'))
 
 def initialize():
     """Initializes all threads which are running fins and a logger instance for the overall status
@@ -83,7 +82,7 @@ def log_status(t_passed, depth_mm, target_dist, target_x, target_y, target_z, no
         status (string): Status in the finite state machine
     """
     with open('./{}/{}_status.log'.format(U_FILENAME, U_FILENAME), 'a') as f:
-        f.write('{:8.1f} :: {:12.0f} :: {:12.0f} :: {:12.0f} :: {:12.0f} :: {:12.0f} :: {:12.0f}\n'.format(t_passed, depth_mm, target_dist, target_x, target_y, target_z, no_neighbors))
+        f.write('{:8.1f} :: {:12.0f} :: {:12.0f} :: {:12.3f} :: {:12.3f} :: {:12.3f} :: {:12.0f}\n'.format(t_passed, depth_mm, target_dist, target_x, target_y, target_z, no_neighbors))
 
 def avoid_duplicates_by_angle():
     """Use right and left cameras just up to the xz-plane such that the overlapping camera range disappears and there are no duplicates.
@@ -112,7 +111,7 @@ def avoid_duplicates_by_angle():
     return (all_blobs, all_angles)
 
 def parse(all_blobs, all_angles):
-    """Assignes duos of blobs to single robots
+    """Assigns duos of blobs to single robots
 
     Idea: Sort all blobs by the angles/directions they are coming from. Pair duos of blobs that have most similar angles.
     
@@ -173,13 +172,13 @@ def lj_force(neighbors, rel_pos):
         return center
 
     # (a=12,b=6) is standard and ratio has to be 2:1, lower numbers for less aggressive repulsion, e.g. (a=6,b=3)
-    a = 6
-    b = 3
+    a = 12
+    b = 6
     # epsilon and gamma are only scaling factors and without effect after normalization
-    epsilon = 1 # depth of potential well, V_LJ(r_target) = epsilon
+    epsilon = 10 # depth of potential well, V_LJ(r_target) = epsilon
     gamma = 1 # force gain
     r_target = target_dist
-    r_const = r_target + 1*130 #xx
+    r_const = r_target + 2.5*BL #xx
 
     for neighbor in neighbors:
         r = np.clip(np.linalg.norm(rel_pos[neighbor]), 0.001, r_const)
@@ -187,6 +186,8 @@ def lj_force(neighbors, rel_pos):
         center += f_lj * rel_pos[neighbor]
 
     center /= len(neighbors)
+    magn = np.linalg.norm(center) # normalize
+    center /= magn # normalize
 
     return center
 
@@ -259,9 +260,10 @@ def depth_ctrl_from_cam(target):
 def main(run_time=60):
     t_passed = 0
     iteration = 0
-    t_change = time.time() - t_start
+    t_main = time.time() - t_start
+    t_change = t_main
     
-    while t_passed < run_time:
+    while t_passed < run_time + t_main:
         # check environment and find blob centroids of leds
         try:
             vision.update()
@@ -274,17 +276,17 @@ def main(run_time=60):
         # find target move with lj force
         target = lj_force(neighbors, rel_pos)
         # move
-        home(target)
-        depth_ctrl_from_cam(target)
+        #home(target)
+        #depth_ctrl_from_cam(target)
 
         # switch behavior
         if t_passed - t_change > run_time / 4:
             leds.off()
             global target_dist
-            if target_dist == 4*130:
-                target_dist = 1.5*130
+            if target_dist == 2.5*BL:
+                target_dist = 1.5*BL
             else:
-                target_dist = 4*130
+                target_dist = 2.5*BL
             t_change = time.time() - t_start
             time.sleep(1.5)
             leds.on()
@@ -300,9 +302,10 @@ def main(run_time=60):
             log_status(t_passed, depth_mm, target_dist, target[0], target[1], target[2], len(neighbors))
 
 
+BL = 160 # body length, [mm]
 max_centroids = 12 # (robots-1)*2, excess centroids are reflections
 global target_dist
-target_dist = 4*130 # distance to neighbors, [mm]
+target_dist = 2.5*BL # distance to neighbors, [mm]
 
 caudal = Fin(U_FIN_C1, U_FIN_C2, 3) # freq, [Hz]
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
@@ -319,6 +322,6 @@ surface_pressure = depth_sensor.pressure_mbar
 initialize()
 t_start = idle()
 leds.on()
-main(120) # run time, [s]
+main(20) # run time, [s]
 leds.off()
 terminate()
