@@ -66,6 +66,7 @@ def terminate():
     pecto_l.terminate()
     pecto_r.terminate()
 
+    time.sleep(1)
     leds.on()
     time.sleep(1)
     leds.off()
@@ -167,18 +168,19 @@ def lj_force(neighbors, rel_pos):
         np.array: Weighted 3D direction based on visible neighbors
     """
     center = np.zeros((3,))
+    magn = 0
 
     if not neighbors:
-        return center
+        return (center, magn)
 
     # (a=12,b=6) is standard and ratio has to be 2:1, lower numbers for less aggressive repulsion, e.g. (a=6,b=3)
-    a = 12
-    b = 6
+    a = 8
+    b = 4
     # epsilon and gamma are only scaling factors and without effect after normalization
-    epsilon = 10 # depth of potential well, V_LJ(r_target) = epsilon
+    epsilon = 100 # depth of potential well, V_LJ(r_target) = epsilon
     gamma = 1 # force gain
     r_target = target_dist
-    r_const = r_target + 2.5*BL #xx
+    r_const = r_target + 4*BL #xx
 
     for neighbor in neighbors:
         r = np.clip(np.linalg.norm(rel_pos[neighbor]), 0.001, r_const)
@@ -189,9 +191,9 @@ def lj_force(neighbors, rel_pos):
     magn = np.linalg.norm(center) # normalize
     center /= magn # normalize
 
-    return center
+    return (center, magn)
 
-def home(target):
+def home(target, magnitude):
     """Controls the pectoral fins to follow an object using both cameras
 
     The "heading" angle towards an object is calculated based on (pqr) coordinates as follows: atan2(r, sqrt(q^2 + p^2)). A positive angle switches the pectoral left fin on turn clockwise. A negative angles switches the pectoral right fin on to turn counterclockwise.
@@ -199,7 +201,9 @@ def home(target):
     Returns:
         (): Floats to the surface and turns on the spot if no object observed
     """
-    caudal_range = 40 # 20 abs(heading) below which caudal fin is switched on
+    caudal_range = 25 # abs(heading) below which caudal fin is switched on
+    freq_c = min(1.5 + 1.5/100 * magnitude, 3)
+    caudal.set_frequency(freq_c)
 
     # blob behind or lost
     if not target.size:
@@ -213,9 +217,17 @@ def home(target):
     # calculate heading
     heading = np.arctan2(target[1], target[0]) * 180 / pi
 
+    # target behind
+    if heading > 155 or heading < -155:
+        caudal.off()
+        pecto_r.set_frequency(6)
+        pecto_r.on()
+        pecto_l.set_frequency(6)
+        pecto_l.on()
+
     # target to the right
-    if heading > 0:
-        freq_l = 5 + 5 * abs(heading) / 180
+    elif heading > 0:
+        freq_l = 4 + 4 * abs(heading) / 180
         pecto_l.set_frequency(freq_l)
 
         pecto_l.on()
@@ -228,7 +240,7 @@ def home(target):
 
     # target to the left
     elif heading < 0:
-        freq_r = 5 + 5 * abs(heading) / 180
+        freq_r = 4 + 4 * abs(heading) / 180
         pecto_r.set_frequency(freq_r)
 
         pecto_r.on()
@@ -274,19 +286,19 @@ def main(run_time=60):
         # match blob duos by angle
         neighbors, rel_pos = parse(all_blobs, all_angles)
         # find target move with lj force
-        target = lj_force(neighbors, rel_pos)
+        target, magnitude = lj_force(neighbors, rel_pos)
         # move
-        #home(target)
-        #depth_ctrl_from_cam(target)
+        home(target, magnitude)
+        depth_ctrl_from_cam(target)
 
         # switch behavior
         if t_passed - t_change > run_time / 4:
             leds.off()
             global target_dist
-            if target_dist == 2.5*BL:
-                target_dist = 1.5*BL
+            if target_dist == upper_thresh:
+                target_dist = lower_thresh
             else:
-                target_dist = 2.5*BL
+                target_dist = upper_thresh
             t_change = time.time() - t_start
             time.sleep(1.5)
             leds.on()
@@ -303,11 +315,12 @@ def main(run_time=60):
 
 
 BL = 160 # body length, [mm]
-max_centroids = 12 # (robots-1)*2, excess centroids are reflections
-global target_dist
-target_dist = 2.5*BL # distance to neighbors, [mm]
+max_centroids = 8 # (robots-1)*2, excess centroids are reflections
+lower_thresh = 0.5*BL
+upper_thresh = 1.5*BL
+target_dist = lower_thresh # distance to neighbors, [mm]
 
-caudal = Fin(U_FIN_C1, U_FIN_C2, 3) # freq, [Hz]
+caudal = Fin(U_FIN_C1, U_FIN_C2, 2.5) # freq, [Hz]
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
 pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 8) # freq, [Hz]
 pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq, [Hz]
@@ -322,6 +335,6 @@ surface_pressure = depth_sensor.pressure_mbar
 initialize()
 t_start = idle()
 leds.on()
-main(20) # run time, [s]
+main(180) # run time, [s]
 leds.off()
 terminate()
