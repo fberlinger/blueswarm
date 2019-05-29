@@ -142,17 +142,48 @@ def parse(all_blobs, all_angles):
             i += 1
             continue
 
-        # else, add neighbor with averaged xyz coordinates
+        # else, add 2 blobs
         b1 = all_blobs[:,sorted_indices[i]]
         b2 = all_blobs[:,sorted_indices[i+1]]
 
+        # check for reflections
+        ref = 0
+        if i+2 < no_blobs-1:
+            dangle = abs(all_angles[sorted_indices[i+2]] - all_angles[sorted_indices[i]])
+            if dangle < angle_thresh: # a 3rd blob from same direction?
+                ref = 1
+                b3 = all_blobs[:,sorted_indices[i+2]]
+                # who is closest to the surface?
+                pitch1 = (np.arctan2(b1[2], sqrt(b1[0]**2 + b1[1]**2)) * 180 / pi, 1)
+                pitch2 = (np.arctan2(b2[2], sqrt(b2[0]**2 + b2[1]**2)) * 180 / pi, 2)
+                pitch3 = (np.arctan2(b3[2], sqrt(b3[0]**2 + b3[1]**2)) * 180 / pi, 3)
+                min_pitch = min(pitch1, pitch2, pitch3)[1] # smallest angle (negative) is closest to surface and will be discarded
+                if min_pitch == 1:
+                    b1 = b3
+                elif min_pitch == 2:
+                    b2 = b3
+
+                if i+3 < no_blobs-1:
+                    dangle = abs(all_angles[sorted_indices[i+3]] - all_angles[sorted_indices[i]])
+                    if dangle < angle_thresh: # a 4th blob from same direction?
+                        ref = 2
+                        b4 = all_blobs[:,sorted_indices[i+3]]
+                        # who is closest to the surface?
+                        pitch4 = (np.arctan2(b4[2], sqrt(b4[0]**2 + b4[1]**2)) * 180 / pi, 4)
+                        min_pitch = min(pitch1, pitch2, pitch4)[1] # smallest angle (negative)
+                        if min_pitch == 1:
+                            b1 = b4
+                        elif min_pitch == 2:
+                            b2 = b4
+
+        # add final duo as neighbor with averaged xyz coordinates
         pqr = np.transpose(np.vstack((b1, b2)))
         xyz = vision._pqr_to_xyz(pqr)
 
         neighbors.add(neighbor_ind)
         rel_pos[neighbor_ind] = (xyz[:,0] + xyz[:,1]) / 2
 
-        i += 2
+        i += 2 + ref
         neighbor_ind += 1
 
     return(neighbors, rel_pos)
@@ -174,13 +205,13 @@ def lj_force(neighbors, rel_pos):
         return (center, magn)
 
     # (a=12,b=6) is standard and ratio has to be 2:1, lower numbers for less aggressive repulsion, e.g. (a=6,b=3)
-    a = 8
-    b = 4
+    a = 12
+    b = 6
     # epsilon and gamma are only scaling factors and without effect after normalization
     epsilon = 100 # depth of potential well, V_LJ(r_target) = epsilon
     gamma = 1 # force gain
     r_target = target_dist
-    r_const = r_target + 4*BL #xx
+    r_const = r_target + 2*BL #xx
 
     for neighbor in neighbors:
         r = np.clip(np.linalg.norm(rel_pos[neighbor]), 0.001, r_const)
@@ -201,8 +232,8 @@ def home(target, magnitude):
     Returns:
         (): Floats to the surface and turns on the spot if no object observed
     """
-    caudal_range = 25 # abs(heading) below which caudal fin is switched on
-    freq_c = min(1.5 + 1.5/100 * magnitude, 3)
+    caudal_range = 30 # abs(heading) below which caudal fin is switched on
+    freq_c = min(2 + 1/250 * magnitude, 3)
     caudal.set_frequency(freq_c)
 
     # blob behind or lost
@@ -259,7 +290,7 @@ def depth_ctrl_from_cam(target):
     Returns:
         (): Floats to the surface if no object observed
     """
-    pitch_range = 10 # abs(pitch) below which dorsal fin is not controlled 
+    pitch_range = 5 # abs(pitch) below which dorsal fin is not controlled 
 
     pitch = np.arctan2(target[2], sqrt(target[0]**2 + target[1]**2)) * 180 / pi
 
@@ -293,15 +324,15 @@ def main(run_time=60):
 
         # switch behavior
         if t_passed - t_change > run_time / 4:
-            leds.off()
+            #leds.off()
             global target_dist
             if target_dist == upper_thresh:
                 target_dist = lower_thresh
             else:
                 target_dist = upper_thresh
             t_change = time.time() - t_start
-            time.sleep(1.5)
-            leds.on()
+            #time.sleep(1.5)
+            #leds.on()
 
         # update counters
         t_passed = time.time() - t_start
@@ -315,10 +346,10 @@ def main(run_time=60):
 
 
 BL = 160 # body length, [mm]
-max_centroids = 8 # (robots-1)*2, excess centroids are reflections
-lower_thresh = 0.5*BL
-upper_thresh = 1.5*BL
-target_dist = lower_thresh # distance to neighbors, [mm]
+max_centroids = 0 # (robots-1)*2, excess centroids are reflections
+lower_thresh = 0.6*BL
+upper_thresh = 1.6*BL
+target_dist = upper_thresh # distance to neighbors, [mm]
 
 caudal = Fin(U_FIN_C1, U_FIN_C2, 2.5) # freq, [Hz]
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
@@ -326,7 +357,7 @@ pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 8) # freq, [Hz]
 pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq, [Hz]
 photodiode = Photodiode()
 leds = LEDS()
-vision = Vision(max_centroids)
+vision = Vision(max_centroids) # 0 disables reflections() in lib_blob
 depth_sensor = DepthSensor()
 
 depth_sensor.update()

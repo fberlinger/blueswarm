@@ -56,7 +56,8 @@ class Blob():
         img_gray = self._raw_to_gray(img)
         blob_pixels = self._thresholding(img_gray)
         self._continuity(blob_pixels)
-        self.reflections()
+        if self.max_blobs:
+            self.reflections()
 
     def _raw_to_gray(self, img):
         """Convert the rgb image to grayscale.
