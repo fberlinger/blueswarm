@@ -4,20 +4,20 @@ import RPi.GPIO as GPIO
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 
-import os
-import numpy as np
 import time
-import math
 import threading
+import math
+import numpy as np
 
 from lib_utils import *
 from lib_leds import LEDS
 from lib_camera import Camera
 
+import os
 os.makedirs('./{}/'.format(U_FILENAME))
 
-class Sync():
 
+class Sync():
     """Summary
     
     Attributes:
@@ -40,13 +40,15 @@ class Sync():
         self.flash_led = False
         self.observed = 0
 
+        self.t_start = 0
         self.timestamp = 0
         self.last_flash = 0
+        self.round = 0
         self.clockspeed = 0.05
 
-        self.flash_period = 12
-        self.flash_dur = 1.2
-        self.obs_dur = 0.55
+        self.flash_period = 15
+        self.flash_dur = 2
+        self.obs_dur = 0.6
         self.refractory = math.ceil(self.flash_dur / self.obs_dur)
 
         self._leds = LEDS()
@@ -56,8 +58,8 @@ class Sync():
     def log_flash(self):
         """Logs the flashing times
         """
-        with open('./{}/{}_flashtimes.log'.format(U_FILENAME, U_FILENAME), 'a') as f:
-            f.write('{}\n'.format(self.last_flash))
+        with open('./{}/{}_flashtimes.log'.format(U_FILENAME, U_UUID), 'a') as f:
+            f.write('{},{}\n'.format(self.round, self.last_flash))
 
     def update(self, run_time):
         """Runs observation if not in refractory period and updates timestamp if flashing is observed.
@@ -65,15 +67,15 @@ class Sync():
         Args:
             run_time (TYPE): Description
         """
-        t_start = time.time()
+        t_update = time.time()
         t_start_loop = time.time()
 
-        while time.time() - t_start < run_time:
+        while time.time() - t_update < run_time:
             if self.observed > 0:
                 self.observed -= 1
             elif self._observe():
                 self.observed = self.refractory
-                dt = time.time() - self.last_flash
+                dt = (time.time()-self.t_start) - self.last_flash
                 self.timestamp += math.sqrt(dt)
             
             t_elapsed = time.time() - t_start_loop
@@ -104,7 +106,8 @@ class Sync():
     def clock(self):
         """Proceeds timestamp within a flashing period. Resets timestamp and causes LEDs to flash (fires!) at the end of each flashing period. Runs on a separate thread.
         """
-        self.last_flash = time.time()
+        self.last_flash = time.time() - self.t_start
+        self.round += 1
         self.log_flash()
         t_start_loop = time.time()
         last_update = time.time()
@@ -114,7 +117,8 @@ class Sync():
                 self.observed = self.refractory
                 self.flash_led = True
                 self.timestamp = 0
-                self.last_flash = time.time()
+                self.last_flash = time.time() - self.t_start
+                self.round += 1
                 self.log_flash()
             else:
                 now = time.time()

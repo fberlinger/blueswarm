@@ -11,16 +11,13 @@ GPIO.setmode(GPIO.BCM)
 
 import time
 import threading
-import random
-import numpy as np
-from math import *
 
 from lib_utils import *
-from lib_sync import Sync
 from lib_fin import Fin
-from lib_leds import LEDS
 from lib_depthsensor import DepthSensor
+from lib_leds import LEDS
 from lib_photodiode import Photodiode
+from lib_sync import Sync
 
 
 def initialize():
@@ -50,22 +47,16 @@ def depth_ctrl_from_depthsensor(target_depth=400, thresh=2): # change depth
     """
     t_start = time.time()
 
-    while time.time() - t_start < 148:
+    while True:
         depth_sensor.update()
+        depth_mm = max(0, (depth_sensor.pressure_mbar - surface_pressure) * 10.197162129779)
 
-        if depth_sensor.depth_mm > (target_depth + thresh):
+        if depth_mm > (target_depth + thresh):
             dorsal.off()
-        elif depth_sensor.depth_mm < (target_depth - thresh):
+        elif depth_mm < (target_depth - thresh):
             dorsal.on()
-        
-        # radom diving for broken psensor
-        #dorsal.on()
-        #time.sleep(10)
-        #dorsal.off()
-        #time.sleep(15)
-        
-    dorsal.off()
 
+    dorsal.off()
 
 def idle():
     """Waiting for starting signal
@@ -75,14 +66,20 @@ def idle():
     while photodiode.brightness > thresh_photodiode:
         photodiode.update()
 
+    t_start = time.time()
+
+    time.sleep(2)
     leds.on()
     time.sleep(1)
     leds.off()
-    time.sleep(4) # change to 1 or 7 for other fishes
+    time.sleep(U_UUID*1.3) # sleep different times for initial desynced flashings
 
+    sync.t_start = t_start
     threading.Thread(target=sync.clock).start()
     threading.Thread(target=sync.flash_LEDs).start()
     threading.Thread(target=depth_ctrl_from_depthsensor).start()
+
+    return t_start
 
 def main(run_time):
     """Runs experiment
@@ -90,18 +87,24 @@ def main(run_time):
     Args:
         run_time (int): Duration of synchronization
     """
-    time.sleep(38) # watch desync flashing
-    sync.update(run_time) # sync flashing
+    t_main = time.time()
+    t_desync = 50 - (t_main-t_start)
+    time.sleep(t_desync) # watch desync flashing, 3 rounds of 15s plus buffer
+    sync.update(run_time-t_desync) # sync flashing
     sync.is_started = False # terminate
 
-dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
 
+target_depth = -149 + U_UUID*83 # 100-600mm if using robots 3-9
+dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
 depth_sensor = DepthSensor()
+depth_sensor.update()
+surface_pressure = depth_sensor.pressure_mbar
+
+leds = LEDS()
 photodiode = Photodiode()
 sync = Sync()
-leds = LEDS()
 
 initialize()
-idle()
-main(110) # run time
+t_start = idle()
+main(190) # run time, allows for 12 rounds of 15s each plus buffer
 terminate()
