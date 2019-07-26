@@ -11,6 +11,7 @@ GPIO.setmode(GPIO.BCM)
 
 import time
 import threading
+import random
 
 from lib_utils import *
 from lib_fin import Fin
@@ -28,7 +29,6 @@ def initialize():
     leds.on()
     time.sleep(1)
     leds.off()
-    time.sleep(1)
 
 def terminate():
     """Terminates synchronization and dorsal fin thread.
@@ -65,14 +65,16 @@ def idle():
 
     while photodiode.brightness > thresh_photodiode:
         photodiode.update()
-
-    t_start = time.time()
-
     time.sleep(2)
+
     leds.on()
     time.sleep(1)
     leds.off()
-    time.sleep(U_UUID*1.3) # sleep different times for initial desynced flashings
+
+    t_start = time.time()
+
+    sleep_time = 12*random.random()
+    time.sleep() # sleep different times for initial desynced flashings
 
     sync.t_start = t_start
     threading.Thread(target=sync.clock).start()

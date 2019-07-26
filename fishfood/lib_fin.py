@@ -65,6 +65,8 @@ class Fin():
                 elapsed_time = time.time() - start_time
                 sleep_time = self._period - elapsed_time
                 time.sleep(sleep_time)
+            else:
+                time.sleep(0.1)
 
     def _eval(self):
         """Switches directions of oscillation

@@ -72,3 +72,11 @@ class Camera():
             print('camera error: select btw right and left camera')
 
         self.picam.capture(self.img, 'rgb', use_video_port=True)
+
+    def capture_sequence(self, imgs):
+        if self.side == 'right':
+            GPIO.output(self.CAMLED, U_CAM_RIGHT) # set to right cam
+        elif self.side == 'left':    
+            GPIO.output(self.CAMLED, U_CAM_LEFT) # set to left cam
+
+        self.picam.capture_sequence(imgs, format='rgb', use_video_port=True)
