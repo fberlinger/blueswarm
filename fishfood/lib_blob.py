@@ -185,14 +185,24 @@ class Blob():
             m_center = U_CAM_MRES - int(self.blobs[0,ind])
             n_center = U_CAM_NRES - int(self.blobs[1,ind])
             # get sum of red/blue pixel values in neighborhood of blob center
-            int red = 0
-            int blue = 0
+            m_low = max(0, m_center-neighborhood)
+            m_high = min(U_CAM_MRES, m_center+neighborhood+1)
+            n_low = max(0, n_center-neighborhood)
+            n_high = min(U_CAM_NRES, n_center+neighborhood+1)
+            red = np.sum(img_red[m_low:m_high, n_low:n_high])
+            blue = np.sum(img_blue[m_low:m_high, n_low:n_high])
+
+            '''
+            red = 0
+            blue = 0
             for ii in range(m_center-neighborhood,m_center+neighborhood+1):
                 ii = max(0, min(U_CAM_MRES, ii)) # image borders
                 for jj in range(n_center-neighborhood,n_center+neighborhood+1):
                     jj = max(0, min(U_CAM_MRES, jj)) # image borders
                     red += img_red[ii,jj]
                     blue += img_blue[ii,jj]
+            '''
+
             colors.append((red, blue))
 
         return colors
