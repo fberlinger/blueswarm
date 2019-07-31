@@ -40,6 +40,8 @@ def initialize():
     threading.Thread(target=pecto_l.run).start()
     threading.Thread(target=pecto_r.run).start()
 
+    threading.Thread(target=leds.flash).start()
+
     leds.on()
     time.sleep(1)
     leds.off()
@@ -61,6 +63,8 @@ def terminate():
     dorsal.terminate()
     pecto_l.terminate()
     pecto_r.terminate()
+
+    leds.terminate()
 
     leds.on()
     time.sleep(1)

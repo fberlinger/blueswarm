@@ -1,6 +1,7 @@
 """LED library, provides functions to switch BlueBot's LEDs on and off.
 """
 import threading
+import time
 import RPi.GPIO as GPIO
 
 class LEDS():
@@ -14,6 +15,11 @@ class LEDS():
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(13, GPIO.OUT)
 
+        self._is_terminated = False
+
+        self._flash = False
+        self.frequency = 0
+
     def on(self):
         """Switch on
         """
@@ -22,3 +28,28 @@ class LEDS():
         """Switch off
         """
         GPIO.output(13, GPIO.LOW)
+
+    def flash_on(self, frequency=15):
+        self.frequency = frequency
+        self._flash = True
+
+    def flash_off(self):
+        self._flash = False
+
+    def flash(self):
+        """Flash leds
+        """
+        while not self._is_terminated:
+            if self._flash:
+                half_period = 1/(self.frequency*2)
+                self.on()
+                time.sleep(half_period)
+                self.off()
+                time.sleep(half_period)
+            else:
+                time.sleep(0.1)
+
+    def terminate(self):
+        """Terminates flash thread
+        """
+        self._is_terminated = True

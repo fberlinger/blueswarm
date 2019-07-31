@@ -161,3 +161,38 @@ class Blob():
         if self.no_blobs > self.max_blobs:
             blob_ind = np.argsort(self.blobs[0, :])[-self.max_blobs:]
             self.blobs = self.blobs[:, blob_ind]
+
+    def color_intensities(self, img, neighborhood):
+        """Sums the color intensities of red and blue pixels within +/- neighborhood pixels around any blob centroid, e.g. if centroid is 10,20 and neighborhood is 2, red is the sum of all red values and blue the sum of all blue values from 8-12,18-22
+        
+        Args:
+            img (array): image array coming from camera
+            neighborhood (int): range within which neighboring pixels are considered
+        
+        Returns:
+            tuple of floats: (sum red, sum blue)
+        """
+        img_rgb = np.zeros((U_CAM_MRES, U_CAM_NRES, 3), dtype=np.uint8)
+        img_rgb = np.array(img)
+        img_red = np.zeros((U_CAM_MRES, U_CAM_NRES))
+        img_red[:, :] = img_rgb[:, :, 0]
+        img_blue = np.zeros((U_CAM_MRES, U_CAM_NRES))
+        img_blue[:, :] = img_rgb[:, :, 2]
+
+        colors = []
+        for ind in range(self.blobs.shape[1]):
+            # flip image back 180 degrees
+            m_center = U_CAM_MRES - int(self.blobs[0,ind])
+            n_center = U_CAM_NRES - int(self.blobs[1,ind])
+            # get sum of red/blue pixel values in neighborhood of blob center
+            int red = 0
+            int blue = 0
+            for ii in range(m_center-neighborhood,m_center+neighborhood+1):
+                ii = max(0, min(U_CAM_MRES, ii)) # image borders
+                for jj in range(n_center-neighborhood,n_center+neighborhood+1):
+                    jj = max(0, min(U_CAM_MRES, jj)) # image borders
+                    red += img_red[ii,jj]
+                    blue += img_blue[ii,jj]
+            colors.append((red, blue))
+
+        return colors
