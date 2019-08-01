@@ -80,3 +80,19 @@ class Camera():
             GPIO.output(self.CAMLED, U_CAM_LEFT) # set to left cam
 
         self.picam.capture_sequence(imgs, format='rgb', use_video_port=True)
+
+    def std_settings():
+        camera.framerate = 60
+        camera.exposure_mode = 'auto'
+        camera.color_effects = (128, 128) # black and white
+        camera.awb_gains = (1, 1)
+        camera.brightness = 35
+
+    def redblue_settings():
+        picam.color_effects = None
+        picam.awb_gains = (4.0, 1.0)
+        picam.framerate = 20
+        picam.shutter_speed = 50000 # us
+        picam.exposure_mode = 'off'
+        picam.brightness = 15
+        

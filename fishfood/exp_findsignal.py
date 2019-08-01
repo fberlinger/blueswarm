@@ -323,9 +323,39 @@ def check_flash():
     return flash
 
 def check_signal():
-    found_source = 0
+    found_source = False
     source_location = 0
+    no_pix = 4
+    neighborhood = 2 # no_pix = (2*neighborhood+1)**2
+
+    vision._cam_r.redblue_settings()
+    vision._cam_r.capture()
+    vision._blob_r.detect(vision._cam_r.img)
+    colors, blob_ind = vision._blob_r.color_intensities(vision._cam_r.img, no_pix, neighborhood)
+    vision._cam_r.std_settings()
+
+    if colors:
+        if max(colors) > 1:
+            found_source = True
+            ind = blob_ind[colors.index(max(colors))]
+            source_location = vision.blob_r.blobs[:,ind]
+            return (found_source, source_location) # bool, np.zeros((3,)) or any list such that source_location[0] is p, [1] is q, [2] is r
+
+    vision._cam_l.redblue_settings()
+    vision._cam_l.capture()
+    vision._blob_l.detect(vision._cam_l.img)
+    colors, blob_ind = vision._blob_l.color_intensities(vision._cam_l.img, no_pix, neighborhood)
+    vision._cam_l.std_settings()
+
+    if colors:
+        if max(colors) > 1:
+            found_source = True
+            ind = blob_ind[colors.index(max(colors))]
+            source_location = vision.blob_l.blobs[:,ind]
+    
     return (found_source, source_location) # bool, np.zeros((3,)) or any list such that source_location[0] is p, [1] is q, [2] is r
+
+
 
 def main(run_time):
     while (time.time() - t_start) < run_time:
@@ -396,6 +426,7 @@ pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq, [Hz]
 photodiode = Photodiode()
 leds = LEDS()
 vision = Vision(max_centroids) # 0 disables reflections() in lib_blob
+blob_rb = Blob('left', 0, 50)
 depth_sensor = DepthSensor()
 
 depth_sensor.update()

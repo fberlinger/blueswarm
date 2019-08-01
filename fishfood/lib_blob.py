@@ -39,6 +39,7 @@ class Blob():
         self.blob_size = 0
         self.blobs = np.zeros((2, 1))
         self.no_blobs = 0
+        self.no_pixels = []
 
     def detect(self, img):
         """Detect takes in an image and stores LED blob centroids in self.blobs.
@@ -51,6 +52,7 @@ class Blob():
         self.blob_size = 0
         self.blobs = np.zeros((2, 1))
         self.no_blobs = 0
+        self.no_pixels = []
 
         # Run all subfunctions for blob detection
         img_gray = self._raw_to_gray(img)
@@ -141,6 +143,8 @@ class Blob():
                 m_center = round(sum(m[blob_indices])/blob_indices.shape[0], 3)
                 n_center = round(sum(n[blob_indices])/blob_indices.shape[0], 3)
 
+                self.no_pixels.append(blob_indices.size)
+
                 # flip image 180 degrees bcs camera mounted upside down
                 m_center = U_CAM_MRES - m_center
                 n_center = U_CAM_NRES - n_center
@@ -162,7 +166,7 @@ class Blob():
             blob_ind = np.argsort(self.blobs[0, :])[-self.max_blobs:]
             self.blobs = self.blobs[:, blob_ind]
 
-    def color_intensities(self, img, neighborhood):
+    def color_intensities(self, img, no_pix, neighborhood):
         """Sums the color intensities of red and blue pixels within +/- neighborhood pixels around any blob centroid, e.g. if centroid is 10,20 and neighborhood is 2, red is the sum of all red values and blue the sum of all blue values from 8-12,18-22
         
         Args:
@@ -172,6 +176,9 @@ class Blob():
         Returns:
             tuple of floats: (sum red, sum blue)
         """
+        if self.blob_size < 4:
+        	return []
+
         img_rgb = np.zeros((U_CAM_MRES, U_CAM_NRES, 3), dtype=np.uint8)
         img_rgb = np.array(img)
         img_red = np.zeros((U_CAM_MRES, U_CAM_NRES))
@@ -180,7 +187,10 @@ class Blob():
         img_blue[:, :] = img_rgb[:, :, 2]
 
         colors = []
+        blob_ind = []
         for ind in range(self.blobs.shape[1]):
+        	if self.no_pixels[ind] < no_pix:
+                continue
             # flip image back 180 degrees
             m_center = U_CAM_MRES - int(self.blobs[0,ind])
             n_center = U_CAM_NRES - int(self.blobs[1,ind])
@@ -203,6 +213,6 @@ class Blob():
                     blue += img_blue[ii,jj]
             '''
 
-            colors.append((red, blue))
-
-        return colors
+            colors.append(red/blue)
+            blob_ind.append(ind)
+        return (colors, blob_ind)
