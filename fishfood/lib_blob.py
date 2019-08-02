@@ -177,7 +177,7 @@ class Blob():
             tuple of floats: (sum red, sum blue)
         """
         if self.blob_size < 4:
-        	return []
+            return ([], [])
 
         img_rgb = np.zeros((U_CAM_MRES, U_CAM_NRES, 3), dtype=np.uint8)
         img_rgb = np.array(img)
@@ -189,7 +189,7 @@ class Blob():
         colors = []
         blob_ind = []
         for ind in range(self.blobs.shape[1]):
-        	if self.no_pixels[ind] < no_pix:
+            if self.no_pixels[ind] < no_pix:
                 continue
             # flip image back 180 degrees
             m_center = U_CAM_MRES - int(self.blobs[0,ind])

@@ -42,6 +42,7 @@ def idle():
 
     while photodiode.brightness > thresh_photodiode:
         photodiode.update()
+    '''
     time.sleep(4)
 
     t_blink = time.time()
@@ -53,7 +54,7 @@ def idle():
     elapsed_time = time.time() - t_blink
     sleep_time = 12 - elapsed_time
     time.sleep(sleep_time) # wait such that all robots leave idle before LEDs are on
-    
+    '''
     t_start = time.time()
 
     return t_start
@@ -211,7 +212,7 @@ def lj_force(neighbors, rel_pos):
     epsilon = 100 # depth of potential well, V_LJ(r_target) = epsilon
     gamma = 1 # force gain
     r_target = target_dist
-    r_const = r_target + 2*BL #xx
+    r_const = r_target + 2*160 #xx
 
     for neighbor in neighbors:
         r = np.clip(np.linalg.norm(rel_pos[neighbor]), 0.001, r_const)
@@ -238,9 +239,9 @@ def home(target, magnitude=0):
 
     # blob behind or lost
     if not target.size:
-        #pecto_r.set_frequency(6)
-        #pecto_r.on()
-        pecto_r.off()
+        pecto_r.set_frequency(6)
+        pecto_r.on()
+        #pecto_r.off()
         pecto_l.off()
         caudal.off()
         return
@@ -307,7 +308,7 @@ def check_flash():
     vision._cam_r.capture_sequence(imgs)
     outliers = greedymatch.find_outliers(imgs, 'right')
     no_flashes = flashdetector.find_max_flashes(outliers)
-    print('no flashes right {}'.format(no_flashes))
+    #print('no flashes right {}'.format(no_flashes))
 
     if no_flashes >= thresh_flash:
         flash = True
@@ -317,7 +318,7 @@ def check_flash():
     vision._cam_l.capture_sequence(imgs)
     outliers = greedymatch.find_outliers(imgs, 'left')
     no_flashes = flashdetector.find_max_flashes(outliers)
-    print('no flashes left {}'.format(no_flashes))  
+    #print('no flashes left {}'.format(no_flashes))  
     if no_flashes >= thresh_flash:
         flash = True
     return flash
@@ -338,7 +339,12 @@ def check_signal():
         if max(colors) > 1:
             found_source = True
             ind = blob_ind[colors.index(max(colors))]
-            source_location = vision.blob_r.blobs[:,ind]
+            mn_r = np.zeros((2,1))
+            mn_r[0] = vision._blob_r.blobs[0,ind]
+            mn_r[1] = vision._blob_r.blobs[1,ind]
+            uvw_r = vision._mn_to_uvw(mn_r)
+            pqr_r = vision._uvw_to_pqr_r(uvw_r)
+            source_location = pqr_r
             return (found_source, source_location) # bool, np.zeros((3,)) or any list such that source_location[0] is p, [1] is q, [2] is r
 
     vision._cam_l.redblue_settings()
@@ -351,16 +357,24 @@ def check_signal():
         if max(colors) > 1:
             found_source = True
             ind = blob_ind[colors.index(max(colors))]
-            source_location = vision.blob_l.blobs[:,ind]
+            mn_l = np.zeros((2,1))
+            mn_l[0] = vision._blob_l.blobs[0,ind]
+            mn_l[1] = vision._blob_l.blobs[1,ind]
+            uvw_l = vision._mn_to_uvw(mn_l)
+            pqr_l = vision._uvw_to_pqr_l(uvw_l)
+            source_location = pqr_l
     
     return (found_source, source_location) # bool, np.zeros((3,)) or any list such that source_location[0] is p, [1] is q, [2] is r
 
 
 
 def main(run_time):
+    d_status = {'search': 0, 'approach': 1, 'signal': 2} # status
+
     while (time.time() - t_start) < run_time:
         # UPDATE STATUS
         found_source, source_location = check_signal()
+
         if found_source:
             status = 'signal'
         else:
@@ -408,7 +422,8 @@ def main(run_time):
                 depth_ctrl_from_cam(target)
 
         #### LOG STATUS ####
-        log_status(time.time()-t_start, status)
+        print(status)
+        log_status(time.time()-t_start, d_status[status])
 
 
 max_centroids = 12
@@ -426,7 +441,6 @@ pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq, [Hz]
 photodiode = Photodiode()
 leds = LEDS()
 vision = Vision(max_centroids) # 0 disables reflections() in lib_blob
-blob_rb = Blob('left', 0, 50)
 depth_sensor = DepthSensor()
 
 depth_sensor.update()

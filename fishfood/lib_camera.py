@@ -81,18 +81,17 @@ class Camera():
 
         self.picam.capture_sequence(imgs, format='rgb', use_video_port=True)
 
-    def std_settings():
-        camera.framerate = 60
-        camera.exposure_mode = 'auto'
-        camera.color_effects = (128, 128) # black and white
-        camera.awb_gains = (1, 1)
-        camera.brightness = 35
+    def std_settings(self):
+        self.picam.framerate = 60
+        self.picam.exposure_mode = 'auto'
+        self.picam.color_effects = (128, 128) # black and white
+        self.picam.awb_gains = (1, 1)
+        self.picam.brightness = 35
 
-    def redblue_settings():
-        picam.color_effects = None
-        picam.awb_gains = (4.0, 1.0)
-        picam.framerate = 20
-        picam.shutter_speed = 50000 # us
-        picam.exposure_mode = 'off'
-        picam.brightness = 15
-        
+    def redblue_settings(self):
+        self.picam.color_effects = None
+        self.picam.awb_gains = (4.0, 1.0)
+        self.picam.framerate = 20
+        self.picam.shutter_speed = 50000 # us
+        self.picam.exposure_mode = 'off'
+        self.picam.brightness = 15
