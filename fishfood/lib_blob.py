@@ -188,7 +188,7 @@ class Blob():
 
         colors = []
         blob_ind = []
-        for ind in range(self.blobs.shape[1]):
+        for ind in range(self.no_blobs):
             if self.no_pixels[ind] < no_pix:
                 continue
             # flip image back 180 degrees
@@ -213,6 +213,6 @@ class Blob():
                     blue += img_blue[ii,jj]
             '''
 
-            colors.append(red/blue)
+            colors.append(red/max(0.001,blue))
             blob_ind.append(ind)
         return (colors, blob_ind)

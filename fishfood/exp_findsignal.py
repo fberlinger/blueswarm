@@ -42,7 +42,6 @@ def idle():
 
     while photodiode.brightness > thresh_photodiode:
         photodiode.update()
-    '''
     time.sleep(4)
 
     t_blink = time.time()
@@ -54,7 +53,7 @@ def idle():
     elapsed_time = time.time() - t_blink
     sleep_time = 12 - elapsed_time
     time.sleep(sleep_time) # wait such that all robots leave idle before LEDs are on
-    '''
+    
     t_start = time.time()
 
     return t_start
@@ -325,7 +324,7 @@ def check_flash():
 
 def check_signal():
     found_source = False
-    source_location = 0
+    source_location = np.zeros(0)
     no_pix = 4
     neighborhood = 2 # no_pix = (2*neighborhood+1)**2
 
@@ -370,6 +369,8 @@ def check_signal():
 
 def main(run_time):
     d_status = {'search': 0, 'approach': 1, 'signal': 2} # status
+    signal_counter = 0
+    status = 'search'
 
     while (time.time() - t_start) < run_time:
         # UPDATE STATUS
@@ -377,6 +378,9 @@ def main(run_time):
 
         if found_source:
             status = 'signal'
+            signal_counter = 0
+        elif status == 'signal' and signal_counter < 5:
+            signal_counter += 1
         else:
             flash = check_flash()
             if flash:
@@ -391,21 +395,21 @@ def main(run_time):
             leds.flash_on()
             # stay at source
             home(source_location)
-            depth_ctrl_from_cam(source_location)
+            #depth_ctrl_from_cam(source_location) #xx
         
         else:
             leds.flash_off()
             global target_dist
             if status == 'approach':
                 leds.off()
-                target_dist = 50
+                target_dist = 1
             elif status == 'search':
                 leds.on()
-                target_dist = 500
+                target_dist = 1500
 
             # move for 4 seconds
             t_move = time.time()
-            while (time.time() - t_move) < 4:
+            while (time.time() - t_move) < 2.5:
                 # check environment and find blob centroids of leds
                 try:
                     vision.update()
@@ -419,17 +423,17 @@ def main(run_time):
                 target, magnitude = lj_force(neighbors, rel_pos)
                 # move
                 home(target, magnitude)
-                depth_ctrl_from_cam(target)
+                #depth_ctrl_from_cam(target) #xx
 
         #### LOG STATUS ####
         print(status)
         log_status(time.time()-t_start, d_status[status])
 
 
-max_centroids = 12
-no_images = 30
+max_centroids = 0
+no_images = 60
 thresh_distance = 5
-thresh_flash = 10
+thresh_flash = 20
 
 greedymatch = ImgMatch(no_images, max_centroids, thresh_distance)
 flashdetector = FlashDetector(thresh_distance)
@@ -449,6 +453,6 @@ surface_pressure = depth_sensor.pressure_mbar
 initialize()
 t_start = idle()
 leds.on()
-main(90) # run time, [s]
+main(120) # run time, [s]
 leds.off()
 terminate()
