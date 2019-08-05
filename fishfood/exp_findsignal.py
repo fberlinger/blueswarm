@@ -434,7 +434,7 @@ def main(run_time):
 
 max_centroids = 0
 no_images = 60
-thresh_distance = 5
+thresh_distance = 4
 thresh_flash = 20
 
 greedymatch = ImgMatch(no_images, max_centroids, thresh_distance)
