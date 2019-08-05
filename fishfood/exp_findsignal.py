@@ -75,7 +75,7 @@ def terminate():
 
     GPIO.cleanup()
 
-def log_status(t_passed, status):
+def log_status(t_passed, status, depth_mm):
     """Logs the overall status of BlueBot
     
     Args:
@@ -83,7 +83,7 @@ def log_status(t_passed, status):
         status (string): Status in the finite state machine
     """
     with open('../data/{}/{}_status.log'.format(U_FILENAME, U_UUID), 'a') as f:
-        f.write('{},{}\n'.format(t_passed, status))
+        f.write('{},{},{}\n'.format(t_passed, status, depth_mm))
 
 def avoid_duplicates_by_angle():
     """Use right and left cameras just up to the xz-plane such that the overlapping camera range disappears and there are no duplicates.
@@ -408,26 +408,28 @@ def main(run_time):
                 target_dist = 1500
 
             # move for 4 seconds
-            t_move = time.time()
-            while (time.time() - t_move) < 2.5:
+            #t_move = time.time()
+            #while (time.time() - t_move) < 2.5:
                 # check environment and find blob centroids of leds
-                try:
-                    vision.update()
-                except:
-                    continue
-                # find all valid blobs and their respective angles
-                all_blobs, all_angles = avoid_duplicates_by_angle()
-                # match blob duos by angle
-                neighbors, rel_pos = parse(all_blobs, all_angles)
-                # find target move with lj force
-                target, magnitude = lj_force(neighbors, rel_pos)
-                # move
-                home(target, magnitude)
-                #depth_ctrl_from_cam(target) #xx
+            try:
+                vision.update()
+            except:
+                continue
+            # find all valid blobs and their respective angles
+            all_blobs, all_angles = avoid_duplicates_by_angle()
+            # match blob duos by angle
+            neighbors, rel_pos = parse(all_blobs, all_angles)
+            # find target move with lj force
+            target, magnitude = lj_force(neighbors, rel_pos)
+            # move
+            home(target, magnitude)
+            #depth_ctrl_from_cam(target) #xx
 
         #### LOG STATUS ####
         print(status)
-        log_status(time.time()-t_start, d_status[status])
+        depth_sensor.update()
+    	depth_mm = max(0, (depth_sensor.pressure_mbar - surface_pressure) * 10.197162129779)
+        log_status(time.time()-t_start, d_status[status], depth_mm)
 
 
 max_centroids = 0
