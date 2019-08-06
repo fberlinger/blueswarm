@@ -1,5 +1,7 @@
 
 from lib_blob import Blob
+from math import sqrt
+from lib_utils import *
 
 class ImgMatch():
     def __init__(self, no_images, max_blobs, dist_thresh):
@@ -29,6 +31,26 @@ class ImgMatch():
             imgA = list(map(list, zip(*imgA))) # transpose
             imgB = list(map(list, zip(*imgB))) # transpose
 
+
+            ## Remove blobs at the edges of the image
+            scaling_factor = 2592 / U_CAM_NRES
+            CIRCLE_THRESH = 123 # TODO
+            imgA_copy = imgA
+            for i in range(len(imgA_copy)):
+                pt = imgA_copy[i]
+                d = sqrt((pt[0] - U_CAM_xc/scaling_factor)**2 + (pt[1] - U_CAM_xc/scaling_factor)**2)
+                if d > CIRCLE_THRESH:
+                    del imgA[i]
+                    
+            imgB_copy = imgB
+            for i in range(len(imgB_copy)):
+                pt = imgB_copy[i]
+                d = sqrt((pt[0] - U_CAM_xc/scaling_factor)**2 + (pt[1] - U_CAM_xc/scaling_factor)**2)
+                if d > CIRCLE_THRESH:
+                    del imgB[i]
+            #############
+
+
             imgA_len = len(imgA)        
             imgB_len = len(imgB)
             if not imgA_len and not imgB_len:
@@ -40,6 +62,8 @@ class ImgMatch():
             elif not imgB_len:
                 self.outliers.append(imgA)
                 continue
+
+            
 
             # greedily match blobs from 2 images
             new_outliers = []
