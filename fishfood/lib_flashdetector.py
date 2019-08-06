@@ -1,4 +1,7 @@
 
+from math import sqrt
+import numpy as np
+
 class FlashDetector:
     def __init__(self, dist_thresh):
         self.thresh = dist_thresh
@@ -6,7 +9,8 @@ class FlashDetector:
         self.sizes = []
 
     def distance_between(self, p1, p2):
-        return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1]) # Manhattan distance
+        # return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1]) # Manhattan distance
+        return sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2) # Euclidean distance
 
     def update(self, discrepancy_list):
         if not discrepancy_list:
@@ -50,4 +54,9 @@ class FlashDetector:
         if not self.sizes:
             return 0
         
-        return max(self.sizes)
+        ind = self.sizes.index(max(self.sizes))
+        mn = np.zeros((2,1))
+        mn[0] = self.clusters[ind, 0]
+        mn[1] = self.clusters[ind, 1]
+
+        return (max(self.sizes), mn)
