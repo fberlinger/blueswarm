@@ -38,6 +38,7 @@ def initialize():
 def idle():
     """Waiting for starting signal, then signal UUID
     """
+    '''
     thresh_photodiode = 50 # lights off: 2, lights on: 400 -> better range!
 
     while photodiode.brightness > thresh_photodiode:
@@ -53,7 +54,7 @@ def idle():
     elapsed_time = time.time() - t_blink
     sleep_time = 12 - elapsed_time
     time.sleep(sleep_time) # wait such that all robots leave idle before LEDs are on
-    
+    '''
     t_start = time.time()
 
     return t_start
@@ -130,6 +131,7 @@ def home(target, magnitude=0):
 
     # calculate heading
     heading = np.arctan2(target[1], target[0]) * 180 / pi
+    print('heading {}'.format(heading))
 
     # target behind
     if heading > 155 or heading < -155:
@@ -141,7 +143,7 @@ def home(target, magnitude=0):
 
     # target to the right
     elif heading > 0:
-        freq_l = 4 + 4 * abs(heading) / 180
+        freq_l = 2 + 4 * abs(heading) / 180
         pecto_l.set_frequency(freq_l)
 
         pecto_l.on()
@@ -154,7 +156,7 @@ def home(target, magnitude=0):
 
     # target to the left
     elif heading < 0:
-        freq_r = 4 + 4 * abs(heading) / 180
+        freq_r = 2 + 4 * abs(heading) / 180
         pecto_r.set_frequency(freq_r)
 
         pecto_r.on()
@@ -200,7 +202,10 @@ def check_flash():
         flash = True
         uvw_r = vision._mn_to_uvw(location)
         pqr_r = vision._uvw_to_pqr_r(uvw_r)
-        flash_location = pqr_r 
+        flash_location = np.zeros((3,))
+        flash_location[0] = pqr_r[0,0]
+        flash_location[1] = pqr_r[1,0]
+        flash_location[2] = pqr_r[2,0]
         return (flash, flash_location, no_flashes)
 
     # check left side in case right side didn't detect flash
@@ -210,7 +215,10 @@ def check_flash():
         flash = True
         uvw_l = vision._mn_to_uvw(location)
         pqr_l = vision._uvw_to_pqr_l(uvw_l)
-        flash_location = pqr_l
+        flash_location = np.zeros((3,))
+        flash_location[0] = pqr_l[0,0]
+        flash_location[1] = pqr_l[1,0]
+        flash_location[2] = pqr_l[2,0]
         return (flash, flash_location, no_flashes)
 
     return (flash, flash_location, no_flashes)
@@ -234,9 +242,13 @@ def check_signal():
             mn_r = np.zeros((2,1))
             mn_r[0] = vision._blob_r.blobs[0,ind]
             mn_r[1] = vision._blob_r.blobs[1,ind]
+            print('mn_r {}'.format(mn_r))
             uvw_r = vision._mn_to_uvw(mn_r)
             pqr_r = vision._uvw_to_pqr_r(uvw_r)
-            source_location = pqr_r
+            source_location = np.zeros((3,))
+            source_location[0] = pqr_r[0,0]
+            source_location[1] = pqr_r[1,0]
+            source_location[2] = pqr_r[2,0]
             return (found_source, source_location, max(colors)) # bool, np.zeros((3,)) or any list such that source_location[0] is p, [1] is q, [2] is r
 
     vision._cam_l.redblue_settings()
@@ -252,9 +264,13 @@ def check_signal():
             mn_l = np.zeros((2,1))
             mn_l[0] = vision._blob_l.blobs[0,ind]
             mn_l[1] = vision._blob_l.blobs[1,ind]
+            print('mn_l {}'.format(mn_l))
             uvw_l = vision._mn_to_uvw(mn_l)
             pqr_l = vision._uvw_to_pqr_l(uvw_l)
-            source_location = pqr_l
+            source_location = np.zeros((3,))
+            source_location[0] = pqr_l[0,0]
+            source_location[1] = pqr_l[1,0]
+            source_location[2] = pqr_l[2,0]
             return (found_source, source_location, max(colors))
 
     return (found_source, source_location, 9999) # bool, np.zeros((3,)) or any list such that source_location[0] is p, [1] is q, [2] is r
@@ -267,6 +283,8 @@ def main(run_time):
     status = 'search'
 
     while (time.time() - t_start) < run_time:
+        flash = 9999
+        no_flashes = 9999
         # FOUND SOURCE?
         found_source, source_location, max_colors = check_signal()
         if found_source:
@@ -304,7 +322,7 @@ def main(run_time):
         #### LOG STATUS ####
         print(status)
         depth_sensor.update()
-    	depth_mm = max(0, (depth_sensor.pressure_mbar - surface_pressure) * 10.197162129779)
+        depth_mm = max(0, (depth_sensor.pressure_mbar - surface_pressure) * 10.197162129779)
         log_status(time.time()-t_start, status, depth_mm, max_colors, no_flashes, found_source, flash)
 
 
@@ -331,6 +349,6 @@ surface_pressure = depth_sensor.pressure_mbar
 initialize()
 t_start = idle()
 leds.on()
-main(120) # run time, [s]
+main(40) # run time, [s]
 leds.off()
 terminate()

@@ -31,24 +31,29 @@ class ImgMatch():
             imgA = list(map(list, zip(*imgA))) # transpose
             imgB = list(map(list, zip(*imgB))) # transpose
 
+            '''
             ## Remove blobs at the edges of the image
             scaling_factor = 2592 / U_CAM_NRES
-            CIRCLE_THRESH = U_CAM_MRES/2 - 10
-            imgA_copy = imgA
-            for i in range(len(imgA_copy)):
-                pt = imgA_copy[i]
+            CIRCLE_THRESH = min(U_CAM_MRES - U_CAM_xc/scaling_factor, U_CAM_xc/scaling_factor) - 5
+            
+            imgA_copy = []
+            for i in range(len(imgA)):
+                pt = imgA[i]
                 d = sqrt((pt[0] - U_CAM_xc/scaling_factor)**2 + (pt[1] - U_CAM_xc/scaling_factor)**2)
-                if d > CIRCLE_THRESH:
-                    del imgA[i]
-                    
-            imgB_copy = imgB
-            for i in range(len(imgB_copy)):
-                pt = imgB_copy[i]
-                d = sqrt((pt[0] - U_CAM_xc/scaling_factor)**2 + (pt[1] - U_CAM_xc/scaling_factor)**2)
-                if d > CIRCLE_THRESH:
-                    del imgB[i]
-            #############
+                if d < CIRCLE_THRESH:
+                    imgA_copy.append(imgA[i])
+            imgA = imgA_copy
 
+            imgB_copy = []
+            for i in range(len(imgB)):
+                pt = imgB[i]
+                d = sqrt((pt[0] - U_CAM_xc/scaling_factor)**2 + (pt[1] - U_CAM_xc/scaling_factor)**2)
+                if d < CIRCLE_THRESH:
+                    imgB_copy.append(imgB[i])
+            imgB = imgB_copy
+            #############
+            '''
+            
             imgA_len = len(imgA)        
             imgB_len = len(imgB)
             if not imgA_len and not imgB_len:

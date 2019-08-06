@@ -49,11 +49,11 @@ class FlashDetector:
             self.update(data[kk])
         
         if not self.sizes:
-            return 0
+            return (0, 0)
         
         ind = self.sizes.index(max(self.sizes))
         mn = np.zeros((2,1))
-        mn[0] = self.clusters[ind, 0]
-        mn[1] = self.clusters[ind, 1]
+        mn[0] = self.clusters[ind][0]
+        mn[1] = self.clusters[ind][1]
 
         return (max(self.sizes), mn)
