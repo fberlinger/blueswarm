@@ -24,6 +24,7 @@ class LEDS():
         """Switch on
         """
         GPIO.output(13, GPIO.HIGH)
+
     def off(self):
         """Switch off
         """
@@ -39,15 +40,21 @@ class LEDS():
     def flash(self):
         """Flash leds
         """
+        t_off = time.time()
         while not self._is_terminated:
             if self._flash:
                 half_period = 1/(self.frequency*2)
-                self.on()
+                t_elapsed = time.time() - t_off
+                time.sleep(max(0, half_period - t_elapsed))
+                #self.on()
+                GPIO.output(13, GPIO.HIGH) # might be faster than fct call
                 time.sleep(half_period)
-                self.off()
-                time.sleep(half_period)
+                #self.off()
+                GPIO.output(13, GPIO.LOW) # might be faster than fct call
+                t_off = time.time()
             else:
                 time.sleep(0.1)
+                t_off = time.time()
 
     def terminate(self):
         """Terminates flash thread

@@ -140,10 +140,14 @@ class Blob():
             # For pixels continuous in m- and n-direction, find centroids
             for j in range(0, blob_n.shape[1]-1):
                 blob_indices = arg_n[np.asscalar(blob_n[:, j]):np.asscalar(blob_n[:, j+1])]
+
+                # but discard blobs of fewer than 2 pixels
+                if blob_indices.size < 2:
+                    continue
+                self.no_pixels.append(blob_indices.size)
+
                 m_center = round(sum(m[blob_indices])/blob_indices.shape[0], 3)
                 n_center = round(sum(n[blob_indices])/blob_indices.shape[0], 3)
-
-                self.no_pixels.append(blob_indices.size)
 
                 # flip image 180 degrees bcs camera mounted upside down
                 m_center = U_CAM_MRES - m_center

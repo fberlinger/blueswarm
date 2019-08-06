@@ -46,9 +46,14 @@ class ImgMatch():
             for indA, ptA in enumerate(imgA):
                 d_min = (1000, 1000)
                 for indB, ptB in enumerate(imgB):
-                    dm = abs(ptA[0]-ptB[0])
-                    dn = abs(ptA[1]-ptB[1])
-                    d = dm + dn
+                    # Manhattan
+                    #dm = abs(ptA[0]-ptB[0])
+                    #dn = abs(ptA[1]-ptB[1])
+                    #d = dm + dn
+
+                    # Eucledean
+                    d = sqrt((ptA[0]-ptB[0])**2 + (ptA[1]-ptB[1])**2)
+
                     if d < d_min[0]:
                         d_min = (d, indB)
 
