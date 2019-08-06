@@ -31,10 +31,9 @@ class ImgMatch():
             imgA = list(map(list, zip(*imgA))) # transpose
             imgB = list(map(list, zip(*imgB))) # transpose
 
-
             ## Remove blobs at the edges of the image
             scaling_factor = 2592 / U_CAM_NRES
-            CIRCLE_THRESH = 123 # TODO
+            CIRCLE_THRESH = U_CAM_MRES/2 - 10
             imgA_copy = imgA
             for i in range(len(imgA_copy)):
                 pt = imgA_copy[i]
@@ -49,7 +48,6 @@ class ImgMatch():
                 if d > CIRCLE_THRESH:
                     del imgB[i]
             #############
-
 
             imgA_len = len(imgA)        
             imgB_len = len(imgB)
