@@ -1,6 +1,7 @@
 
 from lib_blob import Blob
 from math import sqrt
+from lib_utils import *
 
 class ImgMatch():
     def __init__(self, no_images, max_blobs, dist_thresh):
