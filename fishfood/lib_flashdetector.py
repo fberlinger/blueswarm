@@ -26,7 +26,7 @@ class FlashDetector:
             for jj in range(len(self.clusters)):
                 d = self.distance_between(discrepancy_list[ii], self.clusters[jj])
                 if (d < self.thresh):
-                    self.clusters[jj] = discrepancy_list[ii] # Replace representative of cluster by latese point
+                    self.clusters[jj] = discrepancy_list[ii] # Replace representative of cluster by latest point
                     self.sizes[jj] = self.sizes[jj] + 1 # Increment number of observations in that cluster
                     match_found = True
                     break
@@ -34,9 +34,6 @@ class FlashDetector:
             if not match_found:
                 self.clusters.append(discrepancy_list[ii])
                 self.sizes.append(1)
-
-    def max_flashes(self):
-        return max(self.sizes)
 
     def find_max_flashes(self, data_perm):
         self.clusters = []
