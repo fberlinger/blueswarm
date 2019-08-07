@@ -9,7 +9,7 @@ import threading
 
 leds = LEDS()
 threading.Thread(target=leds.flash).start()
-leds.flash_on()
+leds.on()
 
 t_start = time.time()
 while time.time() - t_start < 30:
@@ -18,4 +18,3 @@ leds.off()
 
 leds.terminate()
 GPIO.cleanup()
-    

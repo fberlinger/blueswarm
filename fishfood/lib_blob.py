@@ -117,7 +117,7 @@ class Blob():
         m_shifted[0] = -1
         m_shifted[-1] = -1
 
-        blob_m = np.where(abs(m_shifted - m) > 1)
+        blob_m = np.where(abs(m_shifted - m) > 1) #xx change here to avoid partitioned blobs, maybe to 3?!
         blob_m = np.asarray(blob_m)
         blob_m[:, -1] += 1
 
