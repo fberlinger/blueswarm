@@ -1,5 +1,6 @@
 """Blob library, a component of vision library. Detects LED pixels in images and returns centroids of individual LEDs.
 """
+import RPi.GPIO as GPIO
 
 from lib_utils import *
 import numpy as np
@@ -40,7 +41,7 @@ class Blob():
         self.no_blobs = 0
         self.no_pixels = []
 
-    def detect(self, img, cont_pix=1):
+    def detect(self, img):
         """Detect takes in an image and stores LED blob centroids in self.blobs.
         
         Args:
@@ -52,7 +53,6 @@ class Blob():
         self.blobs = np.zeros((2, 1))
         self.no_blobs = 0
         self.no_pixels = []
-        self.cont_pix = cont_pix
 
         # Run all subfunctions for blob detection
         img_gray = self._raw_to_gray(img)
@@ -103,56 +103,64 @@ class Blob():
             float: Array of blob centroids including reflections, (2, no_blobs)
         
         """
-        if not blob_pixels.size:
+
+        # Total amount of blob pixels. If none, return.
+        self.blob_size = blob_pixels.size
+        if self.blob_size < 4:
+            self.blobs = np.zeros(0)
             return
 
         # Find pixels that are continuous in m-direction
         m = blob_pixels[0, :]
-        breaks_m = np.asarray(np.where(np.diff(m) > self.cont_pix))
-        breaks_m += 1
-        breaks_m = np.insert(breaks_m, 0, 0)
-        breaks_m = np.append(breaks_m, len(m))
+        m_shifted = np.zeros(m.shape)
+        m_shifted[1:-1] = np.copy(m[:-2])
+        m_shifted[0] = -1
+        m_shifted[-1] = -1
+
+        blob_m = np.where(abs(m_shifted - m) > 1) #xx change here to avoid partitioned blobs, maybe to 3?!
+        blob_m = np.asarray(blob_m)
+        blob_m[:, -1] += 1
 
         # For each continous set in m-direction, find pixels that are also continuous in n-direction
-        for i in range(0, len(breaks_m)-1):
-            m = blob_pixels[0, breaks_m[i]:breaks_m[i+1]]
-            n = blob_pixels[1, breaks_m[i]:breaks_m[i+1]]
+        for i in range(0, blob_m.shape[1]-1):
+            m = blob_pixels[0, blob_m[0, i]:blob_m[0, i+1]]
+            n = blob_pixels[1, blob_m[0, i]:blob_m[0, i+1]]
             arg_n = np.argsort(n)
             n_sorted = np.sort(n)
             
-            breaks_n = np.asarray(np.where(np.diff(n_sorted) > self.cont_pix))
-            breaks_n += 1
-            breaks_n = np.insert(breaks_n, 0, 0)
-            breaks_n = np.append(breaks_n, len(n_sorted))            
+            n_shifted = np.zeros(n.shape)
+            n_shifted[1:-1] = np.copy(n_sorted[:-2])
+            n_shifted[0] = -1
+            n_shifted[-1] = -1
 
-            # For pixels continuous in m- and n-direction, find centroids
-            for j in range(0, len(breaks_n)-1):
-                blob_indices = arg_n[np.asscalar(breaks_n[j]):np.asscalar(breaks_n[j+1])]
-                
-                # no more splits? return centroid!
-                if len(breaks_m) == 2 and len(breaks_n) == 2:
-                    # get centroid
-                    m_center = round(sum(m[blob_indices])/blob_indices.shape[0], 3)
-                    n_center = round(sum(n[blob_indices])/blob_indices.shape[0], 3)
-
-                    # flip image 180 degrees bcs camera mounted upside down
-                    m_center = U_CAM_MRES - m_center
-                    n_center = U_CAM_NRES - n_center
-
-                    if self.no_blobs == 0:
-                        self.blobs[0, 0] = m_center
-                        self.blobs[1, 0] = n_center
-                    else:
-                        self.blobs = np.append(self.blobs, [[m_center], [n_center]], axis=1)
+            blob_n = np.where(abs(n_shifted - n_sorted) > 1)
+            blob_n = np.asarray(blob_n)
+            blob_n[:, -1] += 1
             
-                    self.no_blobs += 1
+            # For pixels continuous in m- and n-direction, find centroids
+            for j in range(0, blob_n.shape[1]-1):
+                blob_indices = arg_n[np.asscalar(blob_n[:, j]):np.asscalar(blob_n[:, j+1])]
 
-                    return
+                # but discard blobs of fewer than 2 pixels
+                if blob_indices.size < 2:
+                    continue
+                self.no_pixels.append(blob_indices.size)
 
-                # run continuity test for each subcluster
+                m_center = round(sum(m[blob_indices])/blob_indices.shape[0], 3)
+                n_center = round(sum(n[blob_indices])/blob_indices.shape[0], 3)
+
+                # flip image 180 degrees bcs camera mounted upside down
+                m_center = U_CAM_MRES - m_center
+                n_center = U_CAM_NRES - n_center
+
+                if self.no_blobs == 0:
+                    self.blobs[0, 0] = m_center
+                    self.blobs[1, 0] = n_center
+
                 else:
-                    new_blob_pix = np.array([m[blob_indices], n[blob_indices]])
-                    self._continuity(new_blob_pix)
+                    self.blobs = np.append(self.blobs, [[m_center], [n_center]], axis=1)
+        
+                self.no_blobs += 1
 
     def reflections(self):
         """Discards LED blob centroids that are considered reflections at the water surface. Reflections tend to appear higher up in the image than real centroids, i.e., they have lower m-coordinates. If the number of identified blobs is greater than the maximum number of expected blobs, the maximum number of expected blobs with the highest m-coodinates will be kept.

@@ -328,10 +328,12 @@ def main(run_time):
 
 max_centroids = 0
 no_images = 30
-thresh_distance = 4
+thresh_distance = 6
 thresh_flash = 10
+ligth_sens = 32
+cont_pix = 3
 
-greedymatch = ImgMatch(no_images, max_centroids, thresh_distance)
+greedymatch = ImgMatch(no_images, max_centroids, thresh_distance, ligth_sens, cont_pix)
 flashdetector = FlashDetector(thresh_distance)
 
 caudal = Fin(U_FIN_C1, U_FIN_C2, 2.5) # freq, [Hz]

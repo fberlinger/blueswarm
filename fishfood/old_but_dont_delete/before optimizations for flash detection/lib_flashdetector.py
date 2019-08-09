@@ -1,7 +1,6 @@
 
 from math import sqrt
 import numpy as np
-import copy
 
 class FlashDetector:
     def __init__(self, dist_thresh):
@@ -19,7 +18,7 @@ class FlashDetector:
 
         for e in discrepancy_list:
             if not e:
-                return
+                return #why?
 
         if not self.clusters:
             self.clusters.append(discrepancy_list[0])
@@ -44,8 +43,8 @@ class FlashDetector:
         self.clusters = []
         self.sizes = []
 
-        data = copy.deepcopy(data_perm)
-        
+        data = data_perm
+
         for kk in range(len(data)):
             self.update(data[kk])
         
@@ -56,8 +55,5 @@ class FlashDetector:
         mn = np.zeros((2,1))
         mn[0] = self.clusters[ind][0]
         mn[1] = self.clusters[ind][1]
-
-        for streak in enumerate(self.clusters):
-            print(streak)
 
         return (max(self.sizes), mn)
