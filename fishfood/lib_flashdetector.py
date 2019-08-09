@@ -57,7 +57,4 @@ class FlashDetector:
         mn[0] = self.clusters[ind][0]
         mn[1] = self.clusters[ind][1]
 
-        for streak in enumerate(self.clusters):
-            print(streak)
-
         return (max(self.sizes), mn)
