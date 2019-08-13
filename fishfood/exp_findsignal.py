@@ -329,14 +329,17 @@ def main(run_time):
         log_status(time.time()-t_start, status, found_source, max_colors, found_flash, no_flashes, depth_mm)
 
 
-max_centroids = 0
-no_images = 30
-thresh_distance = 6
-thresh_flash = 10
-ligth_sens = 32
-cont_pix = 3
+max_centroids = 0 # how many blobs you expect to see in one image, surplus will be remove by blob.reflections(), 0 disables blob.reflections()
+no_images = 30 # no of images in sequence for flash detection
+thresh_flash = 10 # no of observed flashes to trigger flash detection (flashing at 15Hz, so nominally 15 flashes)
+thresh_distance = 6 # distance a blob may move between successive images
+ligth_sens = 32 # thresholding for flash pixels
+cont_pix = 3 # gap size for continuity of flash pixels
+rec_depth = 0 # recursion depth in blob detection, 0 disables recursion
+nhood_size = 5 # size of neighborhood that gets probed for disappeared blob in flash detection
+soft_thresh = 5 # light sensitivity threshold for a missing pixel
 
-greedymatch = ImgMatch(no_images, max_centroids, thresh_distance, ligth_sens, cont_pix)
+greedymatch = ImgMatch(no_images, max_centroids, thresh_distance, ligth_sens, cont_pix, rec_depth, nhood_size, soft_thresh)
 flashdetector = FlashDetector(thresh_distance)
 
 caudal = Fin(U_FIN_C1, U_FIN_C2, 2.5) # freq, [Hz]
@@ -354,6 +357,6 @@ surface_pressure = depth_sensor.pressure_mbar
 initialize()
 t_start = idle()
 leds.on()
-main(60) # run time, [s]
+main(10) # run time, [s]
 leds.off()
 terminate()

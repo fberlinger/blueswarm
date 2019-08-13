@@ -35,24 +35,25 @@ class Blob():
         self.thresh = thresh
 
         # Initializations
-        self.blob_size = 0
-        self.blobs = np.zeros((2, 1))
         self.no_blobs = 0
+        self.blobs = []
         self.no_pixels = []
 
-    def detect(self, img, cont_pix=1):
+    def detect(self, img, cont_pix=1, rec_depth=0):
         """Detect takes in an image and stores LED blob centroids in self.blobs.
         
         Args:
             img (int): Image array from lib_camera, (U_CAM_MRES, U_CAM_NRES, 3)
         """
 
-        # Initializations
-        self.blob_size = 0
-        self.blobs = np.zeros((2, 1))
-        self.no_blobs = 0
-        self.no_pixels = []
+        # Arguments
         self.cont_pix = cont_pix
+        self.rec_depth = rec_depth
+
+        # Initializations
+        self.no_blobs = 0
+        self.blobs = []
+        self.no_pixels = []
 
         # Run all subfunctions for blob detection
         img_gray = self._raw_to_gray(img)
@@ -91,7 +92,7 @@ class Blob():
 
         return blob_pixels
 
-    def _continuity(self, blob_pixels):
+    def _continuity(self, blob_pixels, rec_level=0):
         """Clusters blob pixels and returns lists of individual blob centroids
         
         _continuity checks all blob pixels for continuity in m-direction. It then checks the subsets which are continous in m-direction for continuity in n-direction. It finally returns an array that contains the centroids of individual blobs.
@@ -129,35 +130,37 @@ class Blob():
             for j in range(0, len(breaks_n)-1):
                 blob_indices = arg_n[np.asscalar(breaks_n[j]):np.asscalar(breaks_n[j+1])]
                 
+                # run continuity test for each subcluster if recursion depth has not been reached
+                if (len(breaks_m) > 2 or len(breaks_n) > 2) and rec_level < self.rec_depth:
+                    rec_level += 1
+                    new_blob_pix = np.array([m[blob_indices], n[blob_indices]])
+                    self._continuity(new_blob_pix, rec_level)
+
                 # no more splits? return centroid!
-                if len(breaks_m) == 2 and len(breaks_n) == 2:
+                else:
+                    # store number of pixels in that blob
+                    self.no_pixels.append(blob_indices.size)
                     # get centroid
                     m_center = round(sum(m[blob_indices])/blob_indices.shape[0], 3)
                     n_center = round(sum(n[blob_indices])/blob_indices.shape[0], 3)
-
                     # flip image 180 degrees bcs camera mounted upside down
                     m_center = U_CAM_MRES - m_center
                     n_center = U_CAM_NRES - n_center
 
                     if self.no_blobs == 0:
+                        self.blobs = np.zeros((2, 1))
                         self.blobs[0, 0] = m_center
                         self.blobs[1, 0] = n_center
                     else:
                         self.blobs = np.append(self.blobs, [[m_center], [n_center]], axis=1)
-            
+                    
                     self.no_blobs += 1
 
                     return
 
-                # run continuity test for each subcluster
-                else:
-                    new_blob_pix = np.array([m[blob_indices], n[blob_indices]])
-                    self._continuity(new_blob_pix)
-
     def reflections(self):
         """Discards LED blob centroids that are considered reflections at the water surface. Reflections tend to appear higher up in the image than real centroids, i.e., they have lower m-coordinates. If the number of identified blobs is greater than the maximum number of expected blobs, the maximum number of expected blobs with the highest m-coodinates will be kept.
         """
-
         if self.no_blobs > self.max_blobs:
             blob_ind = np.argsort(self.blobs[0, :])[-self.max_blobs:]
             self.blobs = self.blobs[:, blob_ind]
@@ -172,7 +175,7 @@ class Blob():
         Returns:
             tuple of floats: (sum red, sum blue)
         """
-        if self.blob_size < 4:
+        if not self.no_blobs:
             return ([], [])
 
         img_rgb = np.zeros((U_CAM_MRES, U_CAM_NRES, 3), dtype=np.uint8)
@@ -188,8 +191,8 @@ class Blob():
             if self.no_pixels[ind] < no_pix:
                 continue
             # flip image back 180 degrees
-            m_center = U_CAM_MRES - int(self.blobs[0,ind])
-            n_center = U_CAM_NRES - int(self.blobs[1,ind])
+            m_center = U_CAM_MRES - round(self.blobs[0,ind])
+            n_center = U_CAM_NRES - round(self.blobs[1,ind])
             # get sum of red/blue pixel values in neighborhood of blob center
             m_low = max(0, m_center-neighborhood)
             m_high = min(U_CAM_MRES, m_center+neighborhood+1)
@@ -198,17 +201,7 @@ class Blob():
             red = np.sum(img_red[m_low:m_high, n_low:n_high])
             blue = np.sum(img_blue[m_low:m_high, n_low:n_high])
 
-            '''
-            red = 0
-            blue = 0
-            for ii in range(m_center-neighborhood,m_center+neighborhood+1):
-                ii = max(0, min(U_CAM_MRES, ii)) # image borders
-                for jj in range(n_center-neighborhood,n_center+neighborhood+1):
-                    jj = max(0, min(U_CAM_MRES, jj)) # image borders
-                    red += img_red[ii,jj]
-                    blue += img_blue[ii,jj]
-            '''
-
             colors.append(red/max(0.001,blue))
             blob_ind.append(ind)
+
         return (colors, blob_ind)

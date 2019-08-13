@@ -6,42 +6,49 @@ import copy
 class FlashDetector:
     def __init__(self, dist_thresh):
         self.thresh = dist_thresh
-        self.clusters = []
+        self.streaks = []
         self.sizes = []
 
     def distance_between(self, p1, p2):
         # return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1]) # Manhattan distance
         return sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2) # Euclidean distance
 
-    def update(self, discrepancy_list):
-        if not discrepancy_list:
+    def update(self, outliers):
+        if not outliers:
             return
 
-        for e in discrepancy_list:
-            if not e:
-                return
+        if not self.streaks:
+            for ii in range(len(outliers)):
+                self.streaks.append(outliers[ii])
+                self.sizes.append(1)
+            return
 
-        if not self.clusters:
-            self.clusters.append(discrepancy_list[0])
-            self.sizes.append(1)
-            discrepancy_list.pop(0)
+        N1 = len(self.streaks)
+        N2 = len(outliers)
+        D = np.zeros((N1, N2))
 
-        for ii in range(len(discrepancy_list)):
-            match_found = False
-            for jj in range(len(self.clusters)):
-                d = self.distance_between(discrepancy_list[ii], self.clusters[jj])
-                if (d < self.thresh):
-                    self.clusters[jj] = discrepancy_list[ii] # Replace representative of cluster by latest point
-                    self.sizes[jj] = self.sizes[jj] + 1 # Increment number of observations in that cluster
-                    match_found = True
-                    break
+        for ii in range(N1):
+            for jj in range(N2):
+                D[ii,jj] = sqrt((self.streaks[ii][0]-outliers[jj][0])**2 + (self.streaks[ii][1]-outliers[jj][1])**2)
 
-            if not match_found:
-                self.clusters.append(discrepancy_list[ii])
+        flags_2 = np.ones(N2)
+
+        while np.min(D) < self.thresh:
+            ind = np.unravel_index(np.argmin(D, axis=None), D.shape)
+            self.streaks[ind[0]] = outliers[ind[1]]
+            self.sizes[ind[0]] += 1
+
+            D[ind[0],:] = self.thresh + 1 # add 1 to avoid float comparison errors
+            D[:,ind[1]] = self.thresh + 1 # add 1 to avoid float comparison errors
+            flags_2[ind[1]] = 0
+
+        for kk in range(N2):
+            if flags_2[kk] == 1:
+                self.streaks.append(outliers[kk])
                 self.sizes.append(1)
 
     def find_max_flashes(self, data_perm):
-        self.clusters = []
+        self.streaks = []
         self.sizes = []
 
         data = copy.deepcopy(data_perm)
@@ -54,7 +61,7 @@ class FlashDetector:
         
         ind = self.sizes.index(max(self.sizes))
         mn = np.zeros((2,1))
-        mn[0] = self.clusters[ind][0]
-        mn[1] = self.clusters[ind][1]
+        mn[0] = self.streaks[ind][0]
+        mn[1] = self.streaks[ind][1]
 
         return (max(self.sizes), mn)
