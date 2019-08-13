@@ -58,7 +58,7 @@ class Vision():
         #t_uvw = -1
         #t_pqr = -1
         #t_xyz = -1
-        if self._blob_r.blobs.size:
+        if self._blob_r.no_blobs:
             # transform from image coordinates (mn) to coordinates on the unit sphere in the camera frame (uvw)
             #t_now = time.time()
             uvw_r = self._mn_to_uvw(self._blob_r.blobs)
@@ -78,7 +78,7 @@ class Vision():
             self.pqr_r = np.zeros(0)
             self.xyz_r = np.zeros(0)
 
-        if self._blob_l.blobs.size:
+        if self._blob_l.no_blobs:
             # transform from image coordinates (mn) to coordinates on the unit
             # sphere in the camera frame (uvw)
             uvw_l = self._mn_to_uvw(self._blob_l.blobs)

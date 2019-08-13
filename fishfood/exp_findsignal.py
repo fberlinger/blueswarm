@@ -108,7 +108,7 @@ def center():
     else:
         return np.zeros(0)
 
-def home(target, signal_freq=4):
+def home(target, signal_freq=2.5):
     """Controls the pectoral fins to follow an object using both cameras
 
     The "heading" angle towards an object is calculated based on (pqr) coordinates as follows: atan2(q, p). A positive angle switches the pectoral left fin on turn clockwise. A negative angles switches the pectoral right fin on to turn counterclockwise.
@@ -117,7 +117,7 @@ def home(target, signal_freq=4):
         (): Floats to the surface and turns on the spot if no object observed
     """
     caudal_range = 35 # abs(heading) below which caudal fin is switched on
-    freq_c = min(signal_freq, 4)
+    freq_c = min(signal_freq, 2.5)
     caudal.set_frequency(freq_c)
 
     # blob behind or lost
@@ -141,14 +141,14 @@ def home(target, signal_freq=4):
         pecto_l.on()
 
     # target in front
-    elif heading < 10 and heading > -10:
+    elif heading < 5 and heading > -5:
         pecto_r.off()
         pecto_l.off()
         caudal.on()
 
     # target to the right
-    elif heading > 10:
-        freq_l = 1 + 4 * abs(heading) / 180
+    elif heading > 5:
+        freq_l = 2 + 4 * abs(heading) / 180
         pecto_l.set_frequency(freq_l)
 
         pecto_l.on()
@@ -160,8 +160,8 @@ def home(target, signal_freq=4):
             caudal.off()
 
     # target to the left
-    elif heading < -10:
-        freq_r = 1 + 4 * abs(heading) / 180
+    elif heading < -5:
+        freq_r = 2 + 4 * abs(heading) / 180
         pecto_r.set_frequency(freq_r)
 
         pecto_r.on()
@@ -297,7 +297,7 @@ def main(run_time):
             leds.off()
             leds.flash_on()
             # stay at source
-            #home(source_location, 1.5)
+            home(source_location, 1.5)
             #depth_ctrl_from_cam(source_location) #xx
         elif status == 'signal' and signal_counter < 6:
             signal_counter += 1
@@ -306,20 +306,22 @@ def main(run_time):
         else:
             leds.flash_off()
             found_flash, flash_location, no_flashes = check_flash()
+            print('no_flashes {}'.format(no_flashes))
             if found_flash:
                 status = 'home'
                 leds.off()
-                #home(flash_location)
+                home(flash_location)
                 #depth_ctrl_from_cam(flash_location) #xx
             else:
                 status = 'search'
                 leds.on()
-                try:
-                    vision.update()
-                except:
-                    continue
+                #try:
+                #    vision.update()
+                #except:
+                #    continue
+                vision.update()
                 target = center()
-                #home(-target)
+                home(-target)
                 #depth_ctrl_from_cam(-target) #xx
         
         #### LOG STATUS ####
@@ -337,7 +339,7 @@ ligth_sens = 32 # thresholding for flash pixels
 cont_pix = 3 # gap size for continuity of flash pixels
 rec_depth = 0 # recursion depth in blob detection, 0 disables recursion
 nhood_size = 5 # size of neighborhood that gets probed for disappeared blob in flash detection
-soft_thresh = 5 # light sensitivity threshold for a missing pixel
+soft_thresh = 6 # light sensitivity threshold for a missing pixel
 
 greedymatch = ImgMatch(no_images, max_centroids, thresh_distance, ligth_sens, cont_pix, rec_depth, nhood_size, soft_thresh)
 flashdetector = FlashDetector(thresh_distance)
@@ -357,6 +359,6 @@ surface_pressure = depth_sensor.pressure_mbar
 initialize()
 t_start = idle()
 leds.on()
-main(10) # run time, [s]
+main(120) # run time, [s]
 leds.off()
 terminate()

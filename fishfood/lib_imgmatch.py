@@ -38,12 +38,12 @@ class ImgMatch():
 
     def _probe_neighborhood(self, img, m, n):
         # flip image back 180 degrees
-        m_center = U_CAM_MRES - round(m)
-        n_center = U_CAM_NRES - round(n)
+        m_center = U_CAM_MRES - int(round(m))
+        n_center = U_CAM_NRES - int(round(n))
         # get max value in neighborhood around m,n
-        m_low = max(0, m_center-nhood_size)
+        m_low = max(0, m_center-self.nhood_size)
         m_high = min(U_CAM_MRES, m_center+self.nhood_size+1)
-        n_low = max(0, n_center-nhood_size)
+        n_low = max(0, n_center-self.nhood_size)
         n_high = min(U_CAM_NRES, n_center+self.nhood_size+1)
 
         max_intensity = np.max(img[m_low:m_high, n_low:n_high])

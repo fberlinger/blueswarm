@@ -156,8 +156,6 @@ class Blob():
                     
                     self.no_blobs += 1
 
-                    return
-
     def reflections(self):
         """Discards LED blob centroids that are considered reflections at the water surface. Reflections tend to appear higher up in the image than real centroids, i.e., they have lower m-coordinates. If the number of identified blobs is greater than the maximum number of expected blobs, the maximum number of expected blobs with the highest m-coodinates will be kept.
         """
@@ -191,8 +189,8 @@ class Blob():
             if self.no_pixels[ind] < no_pix:
                 continue
             # flip image back 180 degrees
-            m_center = U_CAM_MRES - round(self.blobs[0,ind])
-            n_center = U_CAM_NRES - round(self.blobs[1,ind])
+            m_center = U_CAM_MRES - int(round(self.blobs[0,ind]))
+            n_center = U_CAM_NRES - int(round(self.blobs[1,ind]))
             # get sum of red/blue pixel values in neighborhood of blob center
             m_low = max(0, m_center-neighborhood)
             m_high = min(U_CAM_MRES, m_center+neighborhood+1)
