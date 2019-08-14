@@ -13,15 +13,15 @@ class Home():
         self.freq_left = 0 # freq pectoral left
 
         self.error = 0
-        self.kp = 8/180 # 8Hz (max freq) / 180deg (max error)
+        self.kp = 6/180 # 6Hz (max freq) / 180deg (max error)
         self.omega = 0
-        self.alpha = 12 # turning rate is 36deg/s at 6Hz
+        self.alpha = 6 # turning rate is 36deg/s at 6Hz
 
         self.pecto_r = pecto_r
         self.pecto_l = pecto_l
         self.caudal = caudal
 
-        self.dt = 0.1
+        self.dt = 0.25
 
     def terminate(self):
         self._is_terminated = True
@@ -54,30 +54,29 @@ class Home():
                 time.sleep(0.1)
 
     def _eval(self):
-        #ctrl_output = self.kp * self.error
-        if abs(self.error) < 20:
+        if abs(self.error) < 35:
             self.caudal.on()
         else:
             self.caudal.off()
 
-        ctrl_output = 5 * self.error / 180
+        ctrl_output = self.kp * self.error
         if ctrl_output < 0:
             self.freq_left = 0
-            self.freq_right = abs(ctrl_output) + 1
             self.pecto_l.off()
+            self.freq_right = abs(ctrl_output)
             if self.freq_right < 0.1:
+				self.freq_right = 0
                 self.pecto_r.off()
-                self.freq_right = 0
             else:
                 self.pecto_r.set_frequency(self.freq_right)
                 self.pecto_r.on()
         else:
-            self.freq_right = 0.1
-            self.freq_left = ctrl_output + 1
+            self.freq_right = 0
             self.pecto_r.off()
-            if self.freq_left < 1:
-                self.pecto_l.off()
+            self.freq_left = ctrl_output
+            if self.freq_left < 0.1:
                 self.freq_left = 0
+                self.pecto_l.off()
             else:
                 self.pecto_l.set_frequency(self.freq_left)
                 self.pecto_l.on()

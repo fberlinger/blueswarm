@@ -289,6 +289,7 @@ def check_signal():
 def main(run_time):
     d_status = {'search': 0, 'home': 1, 'signal': 2} # status
     signal_counter = 0
+    flash_counter = 0
     status = 'search'
 
     while (time.time() - t_start) < run_time:
@@ -305,7 +306,7 @@ def main(run_time):
             # stay at source
             home.set_target(source_location)
             #depth_ctrl_from_cam(source_location) #xx
-        elif status == 'signal' and signal_counter < 6:
+        elif status == 'signal' and signal_counter < 5:
             signal_counter += 1
         
         # OBSERVED FLASH?
@@ -315,9 +316,12 @@ def main(run_time):
             print('no_flashes {}'.format(no_flashes))
             if found_flash:
                 status = 'home'
+                flash_counter = 0
                 leds.off()
                 home.set_target(flash_location)
                 #depth_ctrl_from_cam(flash_location) #xx
+            elif status == 'home' and flash_counter < 5:
+                flash_counter += 1
             else:
                 status = 'search'
                 leds.on()
@@ -350,7 +354,7 @@ soft_thresh = 6 # light sensitivity threshold for a missing pixel
 greedymatch = ImgMatch(no_images, max_centroids, thresh_distance, ligth_sens, cont_pix, rec_depth, nhood_size, soft_thresh)
 flashdetector = FlashDetector(thresh_distance)
 
-caudal = Fin(U_FIN_C1, U_FIN_C2, 2.5) # freq, [Hz]
+caudal = Fin(U_FIN_C1, U_FIN_C2, 2) # freq, [Hz]
 dorsal = Fin(U_FIN_D1, U_FIN_D2, 6) # freq, [Hz]
 pecto_r = Fin(U_FIN_PR1, U_FIN_PR2, 8) # freq, [Hz]
 pecto_l = Fin(U_FIN_PL1, U_FIN_PL2, 8) # freq, [Hz]
