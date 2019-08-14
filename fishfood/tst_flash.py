@@ -12,10 +12,9 @@ threading.Thread(target=leds.flash).start()
 leds.flash_on()
 
 t_start = time.time()
-while time.time() - t_start < 120:
+while time.time() - t_start < 60:
     time.sleep(0.5)
 leds.off()
 
 leds.terminate()
 GPIO.cleanup()
-    
