@@ -23,9 +23,10 @@ threading.Thread(target=dorsal.run).start()
 threading.Thread(target=pecto_r.run).start()
 threading.Thread(target=pecto_l.run).start()
 
-pecto_r.on()
-sleep(2.5)
-pecto_r.off()
+pecto_l.on()
+sleep(5)
+pecto_l.off()
+'''
 pecto_l.on()
 sleep(2.5)
 pecto_l.off()
@@ -35,6 +36,7 @@ dorsal.off()
 caudal.on()
 sleep(2.5)
 caudal.off()
+'''
 
 caudal.terminate()
 dorsal.terminate()
