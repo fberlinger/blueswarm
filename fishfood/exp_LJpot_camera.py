@@ -17,6 +17,10 @@ from lib_fin import Fin
 from lib_leds import LEDS
 from lib_vision import Vision
 
+from PIL import Image
+os.makedirs('./data/{}/imgs_r'.format(U_FILENAME))
+os.makedirs('./data/{}/imgs_l'.format(U_FILENAME))
+
 os.makedirs('./data/{}/'.format(U_FILENAME))
 
 def initialize():
@@ -312,6 +316,13 @@ def main(run_time=60):
             vision.update()
         except:
             continue
+
+        # SAVE IMAGES
+        temp = Image.fromarray(vision._cam_r.img)
+        temp.save('./data/{}/imgs_r/img_r_{}.png'.format(U_FILENAME,iteration))
+        temp = Image.fromarray(vision._cam_l.img)
+        temp.save('./data/{}/imgs_l/img_l_{}.png'.format(U_FILENAME,iteration))
+
         # find all valid blobs and their respective angles
         all_blobs, all_angles = avoid_duplicates_by_angle()
         # match blob duos by angle
@@ -323,7 +334,7 @@ def main(run_time=60):
         depth_ctrl_from_cam(target)
 
         # switch behavior
-        if t_passed - t_change > run_time / 4: # set to 2 for plateau
+        if t_passed - t_change > run_time / 4:
             #leds.off()
             global target_dist
             if target_dist == upper_thresh:
@@ -338,8 +349,6 @@ def main(run_time=60):
         t_passed = time.time() - t_start
         iteration += 1
 
-        # log status
-        #if iteration % 2 == 0: 
         depth_sensor.update()
         depth_mm = max(0, (depth_sensor.pressure_mbar - surface_pressure) * 10.197162129779)
         log_status(t_passed, depth_mm, target_dist, target[0], target[1], target[2], len(neighbors))

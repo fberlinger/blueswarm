@@ -230,7 +230,7 @@ def check_flash():
 def check_signal():
     found_source = False
     source_location = np.zeros(0)
-    no_pix = 3
+    no_pix = 4 # was 3 for first successful experiment
     neighborhood = 2 # no_pix = (2*neighborhood+1)**2
 
     vision._cam_r.redblue_settings()
