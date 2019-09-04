@@ -18,10 +18,11 @@ from lib_leds import LEDS
 from lib_vision import Vision
 
 from PIL import Image
+os.makedirs('./data/{}/'.format(U_FILENAME))
 os.makedirs('./data/{}/imgs_r'.format(U_FILENAME))
 os.makedirs('./data/{}/imgs_l'.format(U_FILENAME))
 
-os.makedirs('./data/{}/'.format(U_FILENAME))
+
 
 def initialize():
     """Initializes all threads which are running fins and a logger instance for the overall status
@@ -334,7 +335,7 @@ def main(run_time=60):
         depth_ctrl_from_cam(target)
 
         # switch behavior
-        if t_passed - t_change > run_time / 4:
+        if t_passed - t_change > run_time / 2:
             #leds.off()
             global target_dist
             if target_dist == upper_thresh:
@@ -375,6 +376,6 @@ surface_pressure = depth_sensor.pressure_mbar
 initialize()
 t_start = idle()
 leds.on()
-main(180) # run time, [s]
+main(120) # run time, [s]
 leds.off()
 terminate()

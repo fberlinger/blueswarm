@@ -323,7 +323,7 @@ def main(run_time=60):
         depth_ctrl_from_cam(target)
 
         # switch behavior
-        if t_passed - t_change > run_time / 4: # set to 2 for plateau
+        if t_passed - t_change > run_time / 2: # set to 2 for plateau
             #leds.off()
             global target_dist
             if target_dist == upper_thresh:
@@ -366,6 +366,6 @@ surface_pressure = depth_sensor.pressure_mbar
 initialize()
 t_start = idle()
 leds.on()
-main(180) # run time, [s]
+main(240) # run time, [s]
 leds.off()
 terminate()

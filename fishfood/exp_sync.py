@@ -74,7 +74,7 @@ def idle():
     t_start = time.time()
 
     sleep_time = 12*random.random()
-    time.sleep() # sleep different times for initial desynced flashings
+    time.sleep(sleep_time) # sleep different times for initial desynced flashings
 
     sync.t_start = t_start
     threading.Thread(target=sync.clock).start()
