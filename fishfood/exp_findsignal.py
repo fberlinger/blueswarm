@@ -230,14 +230,12 @@ def check_flash():
 def check_signal():
     found_source = False
     source_location = np.zeros(0)
-    no_pix = 4 # was 3 for first successful experiment
+    no_pix = 3 # was 3 for first successful experiment
     neighborhood = 2 # no_pix = (2*neighborhood+1)**2
 
-    vision._cam_r.redblue_settings()
     vision._cam_r.capture()
     vision._blob_r.detect(vision._cam_r.img)
     colors, blob_ind = vision._blob_r.color_intensities(vision._cam_r.img, no_pix, neighborhood)
-    vision._cam_r.std_settings()
 
     if colors:
         if max(colors) > 1.2:
@@ -254,11 +252,9 @@ def check_signal():
             source_location[2] = pqr_r[2,0]
             return (found_source, source_location, max(colors)) # bool, np.zeros((3,)) or any list such that source_location[0] is p, [1] is q, [2] is r
 
-    vision._cam_l.redblue_settings()
     vision._cam_l.capture()
     vision._blob_l.detect(vision._cam_l.img)
     colors, blob_ind = vision._blob_l.color_intensities(vision._cam_l.img, no_pix, neighborhood)
-    vision._cam_l.std_settings()
 
     if colors:
         if max(colors) > 1.2:
@@ -280,6 +276,10 @@ def check_signal():
 
 
 def main(run_time):
+    vision._cam_r.redblue_settings()
+    vision._cam_l.redblue_settings()
+    time.sleep(0.25)
+
     d_status = {'search': 0, 'home': 1, 'signal': 2} # status
     signal_counter = 0
     flash_counter = 0
@@ -307,18 +307,29 @@ def main(run_time):
         
         # OBSERVED FLASH?
         else:
+            vision._cam_r.std_settings()
+            vision._cam_l.std_settings()
+            time.sleep(0.25)
+
             leds.flash_off()
             try:
                 found_flash, flash_location, no_flashes = check_flash()
             except:
+                vision._cam_r.redblue_settings()
+                vision._cam_l.redblue_settings()
+                time.sleep(0.25)
                 continue
             if found_flash:
+                vision._cam_r.redblue_settings()
+                vision._cam_l.redblue_settings()
                 status = 'home'
                 flash_counter = 0
                 leds.off()
                 home(flash_location)
                 depth_ctrl_from_cam(flash_location)
             elif status == 'home' and flash_counter < 6:
+                vision._cam_r.redblue_settings()
+                vision._cam_l.redblue_settings()
                 flash_counter += 1
             else:
                 status = 'search'
@@ -326,7 +337,12 @@ def main(run_time):
                 try:
                     vision.update()
                 except:
+                    vision._cam_r.redblue_settings()
+                    vision._cam_l.redblue_settings()
+                    time.sleep(0.25)
                     continue
+                vision._cam_r.redblue_settings()
+                vision._cam_l.redblue_settings()
                 target = center()
                 home(-target)
                 depth_ctrl_from_cam(-target)

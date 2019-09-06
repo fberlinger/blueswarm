@@ -2,6 +2,7 @@
 """
 import RPi.GPIO as GPIO
 
+import time
 from lib_utils import *
 import numpy as np
 from picamera import PiCamera
