@@ -4,7 +4,6 @@
 from lib_utils import *
 import numpy as np
 
-
 class Blob():
 
     """Blob takes in a camera image and returns the pixel coordinates (mn) of individual LED blobs.
@@ -129,23 +128,28 @@ class Blob():
             # For pixels continuous in m- and n-direction, find centroids
             for j in range(0, len(breaks_n)-1):
                 blob_indices = arg_n[np.asscalar(breaks_n[j]):np.asscalar(breaks_n[j+1])]
-                
+
                 # run continuity test for each subcluster if recursion depth has not been reached
-                if (len(breaks_m) > 2 or len(breaks_n) > 2) and rec_level < self.rec_depth:
-                    rec_level += 1
-                    new_blob_pix = np.array([m[blob_indices], n[blob_indices]])
-                    self._continuity(new_blob_pix, rec_level)
+                if len(breaks_n) > 2 and rec_level < self.rec_depth:
+                    # m has to be sorted to avoid "artificial" gaps
+                    # n have to be listed in corresponding order
+                    order = np.argsort(m[blob_indices])
+                    new_blob_pix = np.array([np.sort(m[blob_indices]), n[blob_indices][order]])
+
+                    self._continuity(new_blob_pix, rec_level+1)
 
                 # no more splits? return centroid!
                 else:
                     # store number of pixels in that blob
-                    self.no_pixels.append(blob_indices.size)
+                    no_pixels = blob_indices.size
+                    self.no_pixels.append(no_pixels)
                     # get centroid
-                    m_center = round(sum(m[blob_indices])/blob_indices.shape[0], 3)
-                    n_center = round(sum(n[blob_indices])/blob_indices.shape[0], 3)
+                    m_center = round(sum(m[blob_indices])/no_pixels, 1)
+                    n_center = round(sum(n[blob_indices])/no_pixels, 1)
                     # flip image 180 degrees bcs camera mounted upside down
-                    m_center = U_CAM_MRES - m_center
-                    n_center = U_CAM_NRES - n_center
+                    
+                    m_center = U_CAM_MRES - m_center - 1 #xx
+                    n_center = U_CAM_NRES - n_center - 1 #xx
 
                     if self.no_blobs == 0:
                         self.blobs = np.zeros((2, 1))
