@@ -96,3 +96,11 @@ class Camera():
         self.picam.shutter_speed = 50000 # us
         self.picam.exposure_mode = 'off'
         self.picam.brightness = 15
+
+    def colorbot_settings(self):
+        picam.awb_mode = 'auto'
+        picam.iso = 0 # auto
+        picam.brightness = 50 # default is 50
+        picam.contrast = 100 # default is 0
+        picam.sharpness = 100 # default is 0
+        picam.zoom = (0, 0, 1, 0.5) #fb crops (x,y,w,h), play with it, need circular mask to avoid black edges

@@ -23,7 +23,7 @@ class Vision():
         xyz_r (float): True-distance rays from the right camera in the robot frame [mm]
     """
 
-    def __init__(self, max_blobs):
+    def __init__(self, max_blobs, colorbot=False):
         """Camera and Blob are classes for image taking and processing respectively.
         
         Args:
@@ -31,8 +31,8 @@ class Vision():
         """
         self._cam_r = Camera('right')
         self._cam_l = Camera('left')
-        self._blob_r = Blob('right', max_blobs, 40)  # detection threshold
-        self._blob_l = Blob('left', max_blobs, 40)  # detection threshold
+        self._blob_r = Blob('right', max_blobs, 40, colorbot)  # detection threshold
+        self._blob_l = Blob('left', max_blobs, 40, colorbot)  # detection threshold
 
         self.pqr_r = np.zeros((3, 1))
         self.pqr_l = np.zeros((3, 1))

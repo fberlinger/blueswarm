@@ -19,7 +19,7 @@ class Blob():
         thresh (int, optional): Light intensity for pixel to be considered LED blob pixel, [0=LOW,255=HIGH]
     """
 
-    def __init__(self, side, max_blobs, thresh=U_BLOB_THRESH):
+    def __init__(self, side, max_blobs, thresh=U_BLOB_THRESH, colorbot=False):
         """One Blob object is instantiated for each side, i.e., the right and the left side.
         
         Args:
@@ -32,6 +32,7 @@ class Blob():
         self.side = side
         self.max_blobs = max_blobs 
         self.thresh = thresh
+        self.colorbot = colorbot
 
         # Initializations
         self.no_blobs = 0
@@ -86,7 +87,10 @@ class Blob():
         Returns:
             int: Array of blob pixels
         """
-        blob_pixels = np.where(img_gray > self.thresh)
+        if self.colorbot:
+            blob_pixels = np.where(img_gray < 50) #fb play with value
+        else:
+            blob_pixels = np.where(img_gray > self.thresh)
         blob_pixels = np.asarray(blob_pixels)
 
         return blob_pixels
