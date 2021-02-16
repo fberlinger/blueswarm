@@ -33,6 +33,8 @@ class Blob():
         self.max_blobs = max_blobs 
         self.thresh = thresh
         self.colorbot = colorbot
+        if self.colorbot:
+            self.mask_cb = np.loadtxt("/home/pi/fishfood/mask_cb.txt", dtype=np.int32)
 
         # Initializations
         self.no_blobs = 0
@@ -88,7 +90,9 @@ class Blob():
             int: Array of blob pixels
         """
         if self.colorbot:
-            blob_pixels = np.where(img_gray < 50) #fb play with value
+            img_dark = 255*np.ones((192, 256))
+            img_cb = np.multiply(img_dark-img_gray, self.mask_cb)
+            blob_pixels = np.where(img_cb > 50) #fb play with value
         else:
             blob_pixels = np.where(img_gray > self.thresh)
         blob_pixels = np.asarray(blob_pixels)

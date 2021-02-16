@@ -93,7 +93,7 @@ mask_l = np.zeros((192, 256))
 
 print("Hello world")
 
-alpha = 10
+alpha = 25
 
 for m in range(192):
     print(m)
