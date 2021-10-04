@@ -1,86 +1,80 @@
-# Change WiFi Location to US
+# Blueswarm
 
-This can be done though the GUI. Click the WiFi icon on the upper bar (right hand side), the change WiFi location to US.
+Blueswarm is the collective of autonomous underwater robots, used to study 3D collective behaviors. If you just wanted to simulate behaviors, check out Bluesim.
 
-# Camera Duplexer Board
+## Overview
 
-Edit the config.txt file and disable the camera led to run the script. The switch signal is using the camera LED GPIO to select between the two cameras:
+This repository contains two main folders:
+1) Code in `fishfood` is written to be uploaded and run on Bluebots. The following prefixes are used:
+  - `exp_`: experiment files for different behaviors
+  - `lib_`: custom libraries for vision updates, blob detection, fin control, etc.
+  - `tst_`: test files for rapid prototyping or assebmly test routines
+2) Code in `host_machine` runs on your computer and includes files to simultaneously upload and run code on all robots.
 
-sudo nano /boot/config.txt
+All code is written in Python3 and optimized to run as fast as possible onboard of the autonomous robots.
 
-Add the line:
+I will now walk you through an example. Find a complete documentation on Bluebot hardware and software on the Google Drive of the Self-organizing Research Group (private) and visit the "Quick start" folder to get started. 
 
-disable_camera_led=1
+## Run demo
 
-# WiFi Network
+### How to run a demo with a Bluebot:
 
-The WiFi location may be set to US by default
+1.	Connect a Blueswarm router (BB12) to a power outlet.
+2.	Connect your computer to the BlueSwarm WiFi network (PW: Tpossr236).
+3.	Pick a healthy Bluebot (07, 09, 10, 13) and switch it on with the custom switch.
+  - Switch on the switch. Make sure it’s pointed in the correct direction (fish aligned). Touch the two posterior pins.
+4.	SSH into Bluebot
+  - On a Mac: open terminal and type >>ssh pi@192.168.0.1xx where xx is the Bluebot ID number found engraved on the right posterior end (e.g., 07)
+  -	On a Windows machine: use the PuTTY SSH client
+5.	Navigate to the fishfood folder >>cd fishfood
+6.	Write and upload your own fun demo script or execute some existing code (e.g., tst_selfie.py, tst_ledson.py, tst_fins.py) >> python3 tst_selfie.py
 
-Ideally, the robot should have only one WiFi network remembered to avoid potential problems (e.g. if you operate it in the presence of another remembered network which has a stronger signal, it may connect to it). The remembered WiFi network information is stored in the file:
+### Example:
+```
+ssh pi@192.168.0.107
+cd fishfood
+python3 tst_ledson.py
+```
 
-/etc/wpa_config/wpa_config.conf
+### Optional: retrieve data that got saved, such as pictures
+- On a Mac: use Cyberduck
+  -	Choose the SFTP protocol
+  - Server: 192.168.0.1xx (where xx is the Bluebot ID number found engraved on the right posterior end, e.g., 07)
+  - Username: pi
+  - Password: Tpossr236
+  - Hit connect
+  - Drag files to your computer’s desktop
+- On a Windows machine: use the WinSCP file manager
 
-You should see:
+### Don’t forget to turn the robot off!
+- In terminal: >>sudo shutdown now
+-	Use custom switch to turn it off (red light disappears)
 
-ssid=”BlueSwarm”
-wpa=”Tpossr236”
+### If your python-script hangs:
+Abort with `gpio_cleanup_all`
 
-It’s best to leave the robot with a dynamic IP confguration, so if needed to connect to another router, it can simply be assigned an IP by DHCP without having to modify the router settings.
+### Cool demos:
+-	tst_ledson.py: Switches the LEDs on for some period of time.
+-	tst_fins.py: Runs fins.
+-	tst_selfie.py: Takes a picture with each camera.
+-	exp_luring.py: Makes Bluebot find and follow the only light source in the environment. Use a lure stick in the tank and switch off the room lights.
 
-A ‘static’ IP can still be achieved by modifying the router settings. Most routers should have an option to assign a specified IP address to a specified MAC address.
+## Troubleshooting
 
-# Enabling SSH and Interfaces
+### Cannot SSH into Bluebot:
+- Is your computer connected to the “Blueswarm” WiFi network?
+- Is the Bluebot switched on and has booted?
+- Do you have the correct IP-address of the Bluebot you’re trying to connect to?
+- Is the Bluebot submerged in water? WiFi doesn’t work underwater.
 
-Before you can SSH into the R-Pi, you need to enable the SSH server. In a terminal, type:
+### My code isn’t running on Bluebot:
+- Are you using libraries that might not be pre-installed?
+- Are there error statements you can look up?
+- Can you test sub-functions individually to isolate the problem?
+- Has the environment changed, e.g., room lights?
+- Did you specify that you want to execute the code with Python3, i.e., `python3 run_my_code.py`?
+- Have you tried rebooting the robot?
 
-sudo raspi-config
-
-Go to “Interfaces”. Go to “P2 SSH” and press Enter. When prompted whether you want the SSH server to be enabled, say Yes. After a few seconds you should get a confirmation that it has been enabled. You can now exit the configuration tool.
-
-# SSH-ing into the BlueBot
-
-In a terminal, type:
-
-ssh pi@<ip_address>
-
-Replacing <ip_address> with the robot’s IP address on the WiFi network. On our swarm this should be 192.168.0.1XX where XX is the robot’s number (01, 02, 03, etc.).
-
-When prompted, enter the pi user’s password, which should have been set to “Tpossr236”. If this password was not set for some reason, try the default password “raspberry”.
-
-# Enabling Interfaces
-
-This step is crucial to enable the Raspberry Pi to communicate with its various peripherals on the robot (cameras, IMU, Transceiver, pressure sensor, photodiode ADC). In a terminal type
-
-Sudo raspi-config
-
-Navigate to Interfaces. Enable the Camera, SSH (if you haven’t already), SPI, I2C and Remote GPIO. Exit the config tool.
-
-# Dropbox Configuration
-
-TODO
-
-# Router Settings
-
-The BlueBot is configured to look for a WiFi network with the SSID “BlueSwarm” and password “Tpossr236” (capitalization is important!).
-
-# Pins
-
-Caudal fin: 20, 21
-Dorsal fin: 19, 26
-Pectoral left fin: 18, 23
-Pectoral right fin: 4, 22
-
-LED: 13
-
-Photodiode: 27
-
-# TODO for next version
-
-- Remove or cover red camera LEDs
-- Test LEDs
-- Smaller resistors for LEDs, use PWM to control brightness
-- Change charging pin
-- Change PCB (op-amp fix, ADC fix, new voltage reading cct)
-
-# TODO other
-Tracking (run test to see if color is trackable)
+### Bluebot sinks to the bottom of the tank:
+- Is it neutrally buoyant? Tried to remove some weight blocks?
+- Is it leaking?
