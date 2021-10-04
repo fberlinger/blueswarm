@@ -1,6 +1,6 @@
 # Blueswarm
 
-Blueswarm is the collective of autonomous underwater robots, used to study 3D collective behaviors. If you just wanted to simulate behaviors, check out Bluesim.
+Blueswarm is the collective of autonomous underwater robots, used to study 3D collective behaviors: https://youtu.be/qVsu49f-Vf0. If you just wanted to simulate behaviors, check out Bluesim.
 
 ## Overview
 
